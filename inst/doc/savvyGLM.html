@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>savvyGLM: Shrinkage Methods for Generalized Linear Models</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">savvyGLM: Shrinkage Methods for Generalized
+Linear Models</h1>
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p><em>Generalized Linear Models (GLMs)</em> are widely used for
+analyzing multivariate data with non-normal responses. The
+<em>Iteratively Reweighted Least Squares (IRLS)</em> algorithm is the
+main workhorse for fitting these models in small to medium-scale
+problems because it reduces the estimation problem to a series of
+<em>Weighted Least Squares (WLS)</em> subproblems, which are
+computationally less expensive than solving the full maximum likelihood
+optimization directly.</p>
+<p>However, IRLS can be sensitive to convergence issues—especially when
+using the standard <em>Ordinary Least Squares (OLS)</em> update in each
+iteration. In cases of model mis-specification or high variability in
+the data, the OLS estimator may yield significant estimation error. The
+<code>glm2</code> package improves upon the standard <code>glm</code> by
+incorporating a step-halving strategy to better handle convergence
+challenges. This robust framework is implemented in its
+<code>glm.fit2</code> function.</p>
+<p>In the <code>savvyGLM</code> package, we build on the robust
+framework provided by the <code>glm2</code> package (and its function
+<code>glm.fit2</code>) by replacing the standard OLS update in the IRLS
+algorithm with a shrinkage estimator. The rationale is that shrinkage
+estimation introduces a small bias to substantially reduce the <em>Mean
+Squared Error (MSE)</em> of the OLS estimates, resulting in more
+reliable parameter estimates and enhanced convergence stability. The
+corresponding shrinkage paper can be find in <a href="https://openaccess.city.ac.uk/id/eprint/35005/">Slab and Shrinkage
+Linear Regression Estimation</a>.</p>
+<p><a href="#simulation-examples">Simulation studies</a> and <a href="#real-data-analysis">real-data applications</a> demonstrate that
+replacing the OLS update in IRLS with a shrinkage estimator improves the
+convergence and overall performance of GLM estimation compared to the
+traditional non-penalized implementation.</p>
+<p>In summary, our package modifies <code>glm.fit2</code> from
+<code>glm2</code> to:</p>
+<ul>
+<li><p>Leverage robust features, such as step-halving, already present
+in <code>glm2</code>.</p></li>
+<li><p>Replace the OLS update with one of several shrinkage estimators
+(e.g., <code>St_ost</code>, <code>DSh_ost</code>, <code>SR_ost</code>,
+<code>GSR_ost</code>, and optionally <code>Sh_ost</code>).</p></li>
+<li><p>Employ parallelization when multiple candidate methods are
+specified.</p></li>
+</ul>
+<div id="main-features" class="section level2">
+<h2>Main Features</h2>
+<p><code>savvyGLM</code> provides five classes of shrinkage methods for
+GLMs, although by default four are evaluated unless the user explicitly
+includes <code>Sh</code>(since Sh is time-consuming):</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>Custom Optimization Methods:</strong> Implements
+shrinkage estimators (<code>St_ost</code>, <code>DSh_ost</code>,
+<code>SR_ost</code>, <code>GSR_ost</code>, and optionally
+<code>Sh_ost</code>) that replace the standard OLS update in
+IRLS.</p></li>
+<li><p><strong>Flexible Model Choice:</strong> The model_class argument
+allows users to choose one or more shrinkage methods. By default, only
+<code>&quot;St&quot;</code>, <code>&quot;DSh&quot;</code>, <code>&quot;SR&quot;</code>, and
+<code>&quot;GSR&quot;</code> are evaluated. Including <code>&quot;Sh&quot;</code> is
+optional because solving the Sylvester equation required by
+<code>Sh_ost</code> is computationally intensive.</p></li>
+</ol>
+<ul>
+<li><strong>Parallel Evaluation:</strong> When multiple candidate
+methods are specified, the function evaluates them in parallel (if
+use_parallel = TRUE) and selects the final model based on the lowest
+Akaike Information Criterion (AIC).</li>
+</ul>
+</div>
+<div id="key-argument-and-output-summary" class="section level2">
+<h2>Key Argument and Output Summary</h2>
+<table>
+<colgroup>
+<col width="20%" />
+<col width="58%" />
+<col width="20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Argument</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Default</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>x</code></td>
+<td>A numeric matrix of predictors. As for <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/glm.html"><code>glm.fit</code></a>.</td>
+<td><strong>No default; user must supply.</strong></td>
+</tr>
+<tr class="even">
+<td><code>y</code></td>
+<td>A numeric vector of responses. As for <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/glm.html"><code>glm.fit</code></a>.</td>
+<td><strong>No default; user must supply.</strong></td>
+</tr>
+<tr class="odd">
+<td><code>weights</code></td>
+<td>An optional vector of weights to be used in the fitting
+process.</td>
+<td><code>rep(1, nobs)</code></td>
+</tr>
+<tr class="even">
+<td><code>model_class</code></td>
+<td>A character vector specifying the shrinkage model(s) to be used.
+Allowed values are <code>&quot;St&quot;</code>, <code>&quot;DSh&quot;</code>,
+<code>&quot;SR&quot;</code>, <code>&quot;GSR&quot;</code>, and <code>&quot;Sh&quot;</code>. If
+multiple values are given, they are run in parallel and the best is
+chosen by AIC. If <code>&quot;Sh&quot;</code> is not included, it is omitted from
+the evaluation.</td>
+<td><code>c(&quot;St&quot;, &quot;DSh&quot;, &quot;SR&quot;, &quot;GSR&quot;)</code></td>
+</tr>
+<tr class="odd">
+<td><code>start</code>, <code>etastart</code>, <code>mustart</code></td>
+<td>Optional starting values for the parameters, the linear predictor,
+and the mean, respectively.</td>
+<td><code>NULL</code></td>
+</tr>
+<tr class="even">
+<td><code>offset</code></td>
+<td>An optional offset to be included in the model.</td>
+<td><code>rep(0, nobs)</code></td>
+</tr>
+<tr class="odd">
+<td><code>family</code></td>
+<td>A function specifying the conditional distribution of <span class="math inline">\(Y \mid X\)</span>, e.g., <span class="math inline">\(Y \mid X \sim
+\text{family}(g^{-1}(X\beta))\)</span>. (e.g., <code>gaussian()</code>,
+<code>binomial()</code>, <code>poisson()</code>).</td>
+<td><code>gaussian()</code></td>
+</tr>
+<tr class="even">
+<td><code>control</code></td>
+<td>A list of parameters for controlling the fitting process (e.g.,
+<code>maxit</code>, <code>epsilon</code>). Similar to <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/glm.control.html"><code>glm.control</code></a>.</td>
+<td><code>list()</code></td>
+</tr>
+<tr class="odd">
+<td><code>intercept</code></td>
+<td>A logical value indicating whether an intercept should be included
+in the model.</td>
+<td><code>TRUE</code></td>
+</tr>
+<tr class="even">
+<td><code>use_parallel</code></td>
+<td>Logical. If <code>TRUE</code>, multiple methods in
+<code>model_class</code> are evaluated in parallel. If only one method
+is specified, it is run directly. The best model is chosen by the lowest
+AIC among the methods tested.</td>
+<td><code>FALSE</code></td>
+</tr>
+<tr class="odd">
+<td><strong>Key Output</strong></td>
+<td><strong>Description</strong></td>
+<td><strong>Notes</strong></td>
+</tr>
+<tr class="even">
+<td><code>chosen_fit</code></td>
+<td>The name of the shrinkage method selected based on the lowest AIC.
+If only one method is specified in <code>model_class</code>, then
+<code>chosen_fit</code> will simply return that method’s name.</td>
+<td>Returned in the final model object.</td>
+</tr>
+<tr class="odd">
+<td><code>coefficients</code>, <code>residuals</code>, etc.</td>
+<td>The usual GLM components, similar to those returned by <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/glm.html"><code>glm.fit</code></a>.</td>
+<td>See documentation for full details.</td>
+</tr>
+</tbody>
+</table>
+<p>This vignette provides an overview of the methods implemented in
+<code>savvyGLM</code> and demonstrates how to use them on <a href="#simulation-examples">simulated data</a> and <a href="#real-data-analysis">real data</a>. We begin with a theoretical
+overview of each shrinkage class and GLM with IRLS, then walk through
+simulation examples that illustrate how to apply <code>savvyGLM</code>
+for each method.</p>
+<hr />
+</div>
+</div>
+<div id="theoretical-overview" class="section level1">
+<h1>Theoretical Overview</h1>
+<div id="shrinkage-estimators" class="section level2">
+<h2>Shrinkage estimators</h2>
+<p>The underlying optimization methods in <code>savvyGLM</code> are
+designed to reduce the theoretical mean square error by introducing a
+small bias that yields a substantial reduction in variance. This
+trade-off leads to more reliable parameter estimates and improved
+convergence properties in Generalized Linear Models.</p>
+<p>Here, we just provide a table summary since for a detailed
+theoretical overview of the shrinkage estimators applied to GLMs, please
+refer to the <a href="https://ziwei-chenchen.github.io/savvySh/">savvySh
+package</a>, which covers many of the same shrinkage estimators used
+here, but in the context of linear regression. The methods in
+<code>savvyGLM</code> extend these ideas to generalized linear models,
+ensuring that the IRLS updates incorporate shrinkage at each
+iteration.</p>
+<table>
+<colgroup>
+<col width="18%" />
+<col width="18%" />
+<col width="25%" />
+<col width="18%" />
+<col width="18%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><strong>Method</strong></th>
+<th><strong>Shrinkage Approach</strong></th>
+<th><strong>Simple Description</strong></th>
+<th><strong>Extra Overhead?</strong></th>
+<th><strong>Included by Default?</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>OLS</strong></td>
+<td>No shrinkage</td>
+<td>Baseline estimator without any regularization.</td>
+<td>No</td>
+<td>No (baseline method)</td>
+</tr>
+<tr class="even">
+<td><strong>St</strong></td>
+<td>Scalar shrinkage</td>
+<td>Scales all OLS coefficients by a common factor to reduce MSE.</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>DSh</strong></td>
+<td>Diagonal matrix</td>
+<td>Shrinks each OLS coefficient separately using individual
+factors.</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="even">
+<td><strong>SR</strong></td>
+<td>Slab penalty (1 direction)</td>
+<td>Adds a penalty that shrinks the estimate along a fixed direction
+(e.g., all-ones vector).</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>GSR</strong></td>
+<td>Slab penalty (multiple directions)</td>
+<td>Generalizes SR by penalizing multiple directions, often from
+eigenvectors.</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="even">
+<td><strong>LW</strong></td>
+<td>Linear shrinkage</td>
+<td>Shrinks towards a structured target matrix (equal variances, zero
+covariances) to handle large-dimensional data.</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>QIS</strong></td>
+<td>Nonlinear shrinkage</td>
+<td>A quadratic shrinkage estimator optimized under various loss
+functions, highly effective for large covariance matrices.</td>
+<td>No</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="even">
+<td><strong>Sh</strong></td>
+<td>Full matrix (<em>Sylvester equation</em>)</td>
+<td>Applies a matrix transformation to OLS using a solution to the
+<em>Sylvester equation</em>.</td>
+<td><strong>Yes</strong> (computational)</td>
+<td>No (only if specified in <code>model_class</code>)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="generalized-linear-model-and-its-irls-implementation" class="section level2">
+<h2>Generalized Linear Model and its IRLS Implementation</h2>
+<p>A GLM assumes that a response variable <span class="math inline">\(Y\)</span>, defined on some set <span class="math inline">\(\mathcal{Y} \subseteq \Re\)</span>, is related to
+a set of covariates <span class="math inline">\(\mathbf{X}\)</span> in
+<span class="math inline">\(\mathcal{X} \subseteq \Re{^d}\)</span>. The
+conditional distribution of <span class="math inline">\(Y\)</span>
+belongs to the exponential dispersion family, with probability density
+or mass function</p>
+<p><span class="math display">\[
+f_Y(y; \theta, \phi) \;=\; \exp\left\{\frac{\theta\,y -
+b(\theta)}{a(\phi)} \;+\; c(y, \phi)\right\},
+\]</span></p>
+<p>where <span class="math inline">\(\theta\)</span> is the canonical
+parameter, <span class="math inline">\(\phi\)</span> is the dispersion
+parameter, and <span class="math inline">\(a\)</span>, <span class="math inline">\(b\)</span>, <span class="math inline">\(c\)</span>
+are known functions. The mean of <span class="math inline">\(Y\)</span>
+is linked to a linear predictor <span class="math inline">\(\eta_i =
+\mathbf{x}_i^\top \boldsymbol{\beta}\)</span> through a link function
+<span class="math inline">\(g\)</span>, so that</p>
+<p><span class="math display">\[
+\mathbb{E}[Y_i \mid \mathbf{X}_i = \mathbf{x}_i] \;=\;
+h\left(\mathbf{x}_i^\top \boldsymbol{\beta}\right),
+\]</span></p>
+<p>where <span class="math inline">\(h = g^{-1}\)</span> is the inverse
+of the link. Under a canonical link, <span class="math inline">\(h(\cdot) = b^\prime(\cdot)\)</span>.</p>
+<p>For an independent sample <span class="math inline">\(\left\{(y_i,
+\mathbf{x}_i)\right\}_{i=1}^n\)</span>, the log-likelihood for <span class="math inline">\(\boldsymbol{\beta}\)</span> can be written as</p>
+<p><span class="math display">\[
+\ell(\boldsymbol{\beta})
+\;=\; \sum_{i=1}^n \frac{\theta_i\,y_i \;-\; b(\theta_i)}{a(\phi)} \;+\;
+c\left(y_i, \phi\right),
+\]</span></p>
+<p>where <span class="math inline">\(\theta_i = (b^\prime)^{-1}\circ\,
+h\left(\mathbf{x}_i^\top \boldsymbol{\beta}\right)\)</span>. Maximizing
+this log-likelihood is equivalent to minimizing the following objective
+function,</p>
+<p><span class="math display">\[
+\mathcal{C}(\boldsymbol{\beta})
+\;=\; -\sum_{i=1}^n \left(\theta_i\,y_i \;-\; b(\theta_i)\right).
+\]</span></p>
+<p>Taking the derivative of <span class="math inline">\(\mathcal{C}(\boldsymbol{\beta})\)</span> with
+respect to <span class="math inline">\(\boldsymbol{\beta}\)</span> leads
+to the so-called normal equations, which can be solved iteratively. In
+particular, the IRLS algorithm reformulates each iteration as a WLS
+problem:</p>
+<p><span class="math display">\[
+\widehat{\boldsymbol{\beta}}^{(t+1)}
+\;=\; \underset{\boldsymbol{\beta}}{\mathrm{arg\,min}}
+\;\left(\mathbf{z}^{(t)} - \mathbf{X}\,\boldsymbol{\beta}\right)^\top
+\mathbf{W}^{(t)}
+\left(\mathbf{z}^{(t)} - \mathbf{X}\,\boldsymbol{\beta}\right),
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{W}^{(t)}\)</span> is the
+diagonal matrix of weights and <span class="math inline">\(\mathbf{z}^{(t)}\)</span> is the pseudo-response
+at iteration <span class="math inline">\(t\)</span>. Specifically,</p>
+<p><span class="math display">\[
+\mathbf{W}^{(t)}
+\;=\; \mathrm{diag}\left(\left(h^\prime(\eta_i^{(t)})\right)^2 /
+V\left(\mu_i^{(t)}\right)\right),
+\quad
+\mathbf{z}_i^{(t)}
+\;=\; \eta_i^{(t)} \;+\; \frac{y_i -
+\mu_i^{(t)}}{h^\prime(\eta_i^{(t)})},
+\]</span></p>
+<p>with <span class="math inline">\(\mu_i^{(t)} =
+h(\eta_i^{(t)})\)</span> and <span class="math inline">\(\eta_i^{(t)} =
+\mathbf{x}_i^\top \widehat{\boldsymbol{\beta}}^{(t)}\)</span>. Here,
+<span class="math inline">\(V(\mu_i)\)</span> is the variance function
+determined by the exponential family, and <span class="math inline">\(h^\prime\)</span> is the derivative of the inverse
+link.</p>
+<p>By iterating this WLS problem until convergence (or until a maximum
+number of iterations is reached), IRLS provides the maximum likelihood
+estimates for the GLM parameters. In <code>savvyGLM</code>, these WLS
+updates are further enhanced by applying shrinkage estimators
+(<code>St_ost</code>, <code>DSh_ost</code>, <code>SR_ost</code>,
+<code>GSR_ost}, or</code>Sh_ost`) at each iteration, thereby improving
+estimation accuracy and convergence stability.</p>
+<hr />
+</div>
+</div>
+<div id="simulation-examples" class="section level1">
+<h1>Simulation Examples</h1>
+<p>This section presents simulation studies to compare the performance
+of the shrinkage estimators implemented in the <code>savvyGLM</code>
+package. We compare the standard IRLS update (as implemented in
+<code>glm.fit2</code>) with various shrinkage methods implemented in
+<code>savvyGLM</code> by measuring the <span class="math inline">\(L_2\)</span> distance between the estimated and
+true coefficients. Lower <span class="math inline">\(L_2\)</span> values
+indicate better estimation accuracy.</p>
+<p>The following <em>data-generating processes (DGPs)</em> are
+considered for <em>logistic regression (LR)</em>, Poisson, and Gamma
+GLMs with <em>log</em> link and <em>sqrt</em> link:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>Covariate Matrix</strong>: The covariate matrix <span class="math inline">\(\mathbf{X} \in \Re^{n \times p}\)</span> is drawn
+from a multivariate normal distribution with mean zero, unit variances,
+and a Toeplitz covariance matrix <span class="math inline">\(\Sigma\)</span> where <span class="math inline">\(\text{Cov}(X_{i,j}, X_{k,j}) =
+\rho^{|i-k|}\)</span> with <span class="math inline">\(\rho \in
+(-1,1)\)</span>.</p></li>
+<li><p><strong>True Coefficients</strong>: The true regression
+coefficients <span class="math inline">\(\beta_j\)</span> are set to
+alternate in sign and increase in magnitude (e.g., <span class="math inline">\(1, -1, 2, -2, \dots\)</span> for LR with the logit
+link). For Poisson and Gamma GLMs with the log link, a smaller scaling
+is used to avoid numerical issues.</p></li>
+<li><p><strong>Response Generation</strong>:</p>
+<ul>
+<li><p><strong>LR</strong>: Compute the linear predictor: <span class="math inline">\(\eta_i = \beta_0 + \sum_{j=1}^p \beta_j
+x_{ij}\)</span> and generate <span class="math inline">\(Y_i \sim
+\text{Binomial}\left(1,
+\frac{1}{1+e^{-\eta_i}}\right)\)</span>.</p></li>
+<li><p><strong>Poisson GLM</strong>:Two link functions are
+considered:For the <em>log</em> link: <span class="math inline">\(\mu_i
+= e^{\eta_i}\)</span>; for the <em>sqrt</em> link: <span class="math inline">\(\mu_i = \eta_i^2\)</span>. Then, generate <span class="math inline">\(Y_i \sim \text{Poisson}(\mu_i)\)</span>.</p></li>
+<li><p><strong>Gamma GLM</strong>: Similarly, use <span class="math inline">\(\mu_i = e^{\eta_i}\)</span> (<em>log</em> link) or
+<span class="math inline">\(\mu_i = \eta_i^2\)</span> (<em>sqrt</em>
+link), and generate <span class="math inline">\(Y_i\)</span> from a
+Gamma distribution with mean <span class="math inline">\(\mu_i\)</span>.</p></li>
+</ul></li>
+</ol>
+<p>For each scenario, we fit the GLM using the standard IRLS update
+(i.e., OLS-based) and the shrinkage-based IRLS update implemented in
+<code>savvyGLM</code>. The performance is assessed using the <span class="math inline">\(L_2\)</span> distance between the estimated and
+true coefficients. Tables comparing these distances and other relevant
+diagnostics are provided to illustrate the benefits of the shrinkage
+approach. These simulation studies aims to demonstrate that replacing
+the OLS update with shrinkage estimators in the IRLS algorithm improves
+convergence and estimation accuracy, especially in challenging settings
+with multicollinearity or extreme response values.</p>
+<p><strong>Note:</strong> Due to differences in underlying libraries and
+random number generation implementations (e.g., BLAS/LAPACK and RNG
+behavior), the data generated by functions like <code>mvrnorm</code> may
+differ slightly between Windows and macOS/Linux, even with the same
+seed.</p>
+<div id="logistic-regression" class="section level2">
+<h2>Logistic Regression</h2>
+<div id="balanced-data" class="section level3">
+<h3>Balanced Data</h3>
+<p>In this simulation, balanced binary responses are generated using the
+logit link. Covariates are sampled from a multivariate normal
+distribution with a Toeplitz covariance matrix determined by various
+correlation coefficients. To ensure a balanced dataset, a larger dataset
+is first generated, and then a subset is selected to achieve roughly
+equal proportions of 0’s and 1’s. We fit the models using the standard
+GLM (via <code>glm.fit2</code>) and the shrinkage-based GLM (via
+<code>savvy_glm.fit2</code>in <code>savvyGLM</code> package).</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;glm2&#39;</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:MASS&#39;:</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt;     crabs</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;CVXR&#39;</span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:MASS&#39;:</span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="co">#&gt;     huber</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="co">#&gt;     power, sd, var</span></span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:base&#39;:</span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="co">#&gt;     diag, norm, outer</span></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>target_proportion <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>)</span>
+<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a>}</span>
+<span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb1-38"><a href="#cb1-38" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb1-39"><a href="#cb1-39" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb1-40"><a href="#cb1-40" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb1-41"><a href="#cb1-41" tabindex="-1"></a>}</span>
+<span id="cb1-42"><a href="#cb1-42" tabindex="-1"></a></span>
+<span id="cb1-43"><a href="#cb1-43" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb1-44"><a href="#cb1-44" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb1-45"><a href="#cb1-45" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb1-47"><a href="#cb1-47" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb1-48"><a href="#cb1-48" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb1-49"><a href="#cb1-49" tabindex="-1"></a>  n_val_large <span class="ot">&lt;-</span> n_val <span class="sc">*</span> <span class="dv">10</span></span>
+<span id="cb1-50"><a href="#cb1-50" tabindex="-1"></a>  </span>
+<span id="cb1-51"><a href="#cb1-51" tabindex="-1"></a>  X_large <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val_large, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb1-52"><a href="#cb1-52" tabindex="-1"></a>  X_large_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_large)</span>
+<span id="cb1-53"><a href="#cb1-53" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb1-54"><a href="#cb1-54" tabindex="-1"></a>  mu_y_large <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>X_large_intercept <span class="sc">%*%</span> beta_true)))</span>
+<span id="cb1-55"><a href="#cb1-55" tabindex="-1"></a>  y_large <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="at">n =</span> n_val_large, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> mu_y_large)</span>
+<span id="cb1-56"><a href="#cb1-56" tabindex="-1"></a></span>
+<span id="cb1-57"><a href="#cb1-57" tabindex="-1"></a>  y_zero_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">0</span>)[<span class="dv">1</span><span class="sc">:</span><span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion)]</span>
+<span id="cb1-58"><a href="#cb1-58" tabindex="-1"></a>  y_one_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">1</span>)[<span class="dv">1</span><span class="sc">:</span>(n_val <span class="sc">-</span> <span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion))]</span>
+<span id="cb1-59"><a href="#cb1-59" tabindex="-1"></a>  final_indices <span class="ot">&lt;-</span> <span class="fu">c</span>(y_zero_indices, y_one_indices)</span>
+<span id="cb1-60"><a href="#cb1-60" tabindex="-1"></a>  X_final <span class="ot">&lt;-</span> X_large_intercept[final_indices, ]</span>
+<span id="cb1-61"><a href="#cb1-61" tabindex="-1"></a>  y_final <span class="ot">&lt;-</span> y_large[final_indices]</span>
+<span id="cb1-62"><a href="#cb1-62" tabindex="-1"></a>  </span>
+<span id="cb1-63"><a href="#cb1-63" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_final, y_final, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb1-64"><a href="#cb1-64" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb1-65"><a href="#cb1-65" tabindex="-1"></a></span>
+<span id="cb1-66"><a href="#cb1-66" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb1-67"><a href="#cb1-67" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_final, y_final, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb1-68"><a href="#cb1-68" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb1-69"><a href="#cb1-69" tabindex="-1"></a>  }</span>
+<span id="cb1-70"><a href="#cb1-70" tabindex="-1"></a>}</span></code></pre></div>
+<p>A summary table here is produced to compare these distances across
+different <span class="math inline">\(\rho\)</span> values.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">kable</span>(l2_table, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;L2 Distance Between Estimated and True Coefficients (Balanced LR)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>L2 Distance Between Estimated and True Coefficients (Balanced
+LR)</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">rho=-0.75</th>
+<th align="right">rho=-0.5</th>
+<th align="right">rho=0</th>
+<th align="right">rho=0.5</th>
+<th align="right">rho=0.75</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OLS</td>
+<td align="right">118.4198</td>
+<td align="right">138.5361</td>
+<td align="right">414.2164</td>
+<td align="right">5084.7451</td>
+<td align="right">26.1614</td>
+</tr>
+<tr class="even">
+<td align="left">SR</td>
+<td align="right">117.8333</td>
+<td align="right">138.5864</td>
+<td align="right">413.9950</td>
+<td align="right">5082.0885</td>
+<td align="right">26.1597</td>
+</tr>
+<tr class="odd">
+<td align="left">GSR</td>
+<td align="right">117.7572</td>
+<td align="right">138.3772</td>
+<td align="right">413.5489</td>
+<td align="right">5235.2437</td>
+<td align="right">23.1458</td>
+</tr>
+<tr class="even">
+<td align="left">St</td>
+<td align="right">119.5847</td>
+<td align="right">136.3671</td>
+<td align="right">412.7503</td>
+<td align="right">5068.1288</td>
+<td align="right">24.5283</td>
+</tr>
+<tr class="odd">
+<td align="left">DSh</td>
+<td align="right">121.0566</td>
+<td align="right">136.6320</td>
+<td align="right">412.7369</td>
+<td align="right">5069.2734</td>
+<td align="right">23.6872</td>
+</tr>
+<tr class="even">
+<td align="left">LW</td>
+<td align="right">35.5669</td>
+<td align="right">36.9323</td>
+<td align="right">38.5387</td>
+<td align="right">36.5738</td>
+<td align="right">34.2470</td>
+</tr>
+<tr class="odd">
+<td align="left">QIS</td>
+<td align="right">25.2448</td>
+<td align="right">33.1878</td>
+<td align="right">146.1587</td>
+<td align="right">2284.2926</td>
+<td align="right">18.4463</td>
+</tr>
+<tr class="even">
+<td align="left">Sh</td>
+<td align="right">12.1582</td>
+<td align="right">10.0166</td>
+<td align="right">73.5201</td>
+<td align="right">1190.1148</td>
+<td align="right">22.7176</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="imbalanced-data" class="section level3">
+<h3>Imbalanced Data</h3>
+<p>For imbalanced LR, the simulation settings are similar except that
+the target proportion for the negative class is reduced (for example,
+only 5% of the responses are 0’s). This results in a skewed binary
+response, which allows us to evaluate the robustness of the shrinkage
+estimators under class imbalance. As before, models are fit using both
+the standard GLM and the various shrinkage-based GLM.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>target_proportion <span class="ot">&lt;-</span> <span class="fl">0.05</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>)</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>}</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>}</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>  n_val_large <span class="ot">&lt;-</span> n_val <span class="sc">*</span> <span class="dv">10</span></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>  </span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>  X_large <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val_large, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>  X_large_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_large)</span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>  mu_y_large <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>X_large_intercept <span class="sc">%*%</span> beta_true)))</span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>  y_large <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="at">n =</span> n_val_large, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> mu_y_large)</span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a></span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a>  y_zero_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">0</span>)[<span class="dv">1</span><span class="sc">:</span><span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion)]</span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a>  y_one_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">1</span>)[<span class="dv">1</span><span class="sc">:</span>(n_val <span class="sc">-</span> <span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion))]</span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>  final_indices <span class="ot">&lt;-</span> <span class="fu">c</span>(y_zero_indices, y_one_indices)</span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>  X_final <span class="ot">&lt;-</span> X_large_intercept[final_indices, ]</span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>  y_final <span class="ot">&lt;-</span> y_large[final_indices]</span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>  </span>
+<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_final, y_final, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a></span>
+<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_final, y_final, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a>  }</span>
+<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a>}</span></code></pre></div>
+<p>A summary table here is produced to compare these distances across
+different <span class="math inline">\(\rho\)</span> values.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">kable</span>(l2_table, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;L2 Distance Between Estimated and True Coefficients (Imbalanced LR)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>L2 Distance Between Estimated and True Coefficients (Imbalanced
+LR)</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">rho=-0.75</th>
+<th align="right">rho=-0.5</th>
+<th align="right">rho=0</th>
+<th align="right">rho=0.5</th>
+<th align="right">rho=0.75</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OLS</td>
+<td align="right">46.5948</td>
+<td align="right">87.9700</td>
+<td align="right">99.5634</td>
+<td align="right">571.7420</td>
+<td align="right">340.9713</td>
+</tr>
+<tr class="even">
+<td align="left">SR</td>
+<td align="right">46.0122</td>
+<td align="right">87.8380</td>
+<td align="right">100.1734</td>
+<td align="right">569.5226</td>
+<td align="right">341.3195</td>
+</tr>
+<tr class="odd">
+<td align="left">GSR</td>
+<td align="right">44.9937</td>
+<td align="right">87.4731</td>
+<td align="right">99.1064</td>
+<td align="right">571.4744</td>
+<td align="right">342.1765</td>
+</tr>
+<tr class="even">
+<td align="left">St</td>
+<td align="right">44.8112</td>
+<td align="right">86.6661</td>
+<td align="right">99.1358</td>
+<td align="right">569.1595</td>
+<td align="right">339.4084</td>
+</tr>
+<tr class="odd">
+<td align="left">DSh</td>
+<td align="right">44.1640</td>
+<td align="right">86.4792</td>
+<td align="right">97.9790</td>
+<td align="right">568.3849</td>
+<td align="right">341.3638</td>
+</tr>
+<tr class="even">
+<td align="left">LW</td>
+<td align="right">36.2126</td>
+<td align="right">37.3790</td>
+<td align="right">38.4147</td>
+<td align="right">37.3230</td>
+<td align="right">35.5573</td>
+</tr>
+<tr class="odd">
+<td align="left">QIS</td>
+<td align="right">22.4423</td>
+<td align="right">18.9188</td>
+<td align="right">20.2855</td>
+<td align="right">233.9737</td>
+<td align="right">108.4859</td>
+</tr>
+<tr class="even">
+<td align="left">Sh</td>
+<td align="right">26.5751</td>
+<td align="right">17.7852</td>
+<td align="right">16.7885</td>
+<td align="right">94.8718</td>
+<td align="right">50.0001</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="poisson-glms" class="section level2">
+<h2>Poisson GLMs</h2>
+<div id="log-link-function" class="section level3">
+<h3>Log Link Function</h3>
+<p>For Poisson GLMs with the log link, the mean response is modeled as
+<span class="math inline">\(\mu = \exp(\eta)\)</span> with <span class="math inline">\(\eta = X_{\text{intercept}} \,
+\beta_{\text{true}}\)</span>. In this simulation, covariates are
+generated from a multivariate normal distribution with a Toeplitz
+covariance matrix. The responses are simulated from a Poisson
+distribution with rate <span class="math inline">\(\mu =
+\exp(\eta)\)</span>. We fit the models using the standard GLM (via
+<code>glm.fit2</code>) and the shrinkage-based GLM (via
+<code>savvy_glm.fit2</code>in <code>savvyGLM</code> package).</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>}</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>  base_increment <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>  growth_rate <span class="ot">&lt;-</span> <span class="fl">0.95</span> </span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> base_increment <span class="sc">*</span> (growth_rate <span class="sc">^</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">length.out =</span> <span class="fu">ceiling</span>(p_val <span class="sc">/</span> <span class="dv">2</span>)))</span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> <span class="fu">rep</span>(betas, <span class="at">each =</span> <span class="dv">2</span>)[<span class="dv">1</span><span class="sc">:</span>p_val]</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>  signs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> betas <span class="sc">*</span> signs</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>  <span class="fu">return</span>(betas)</span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>}</span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>  </span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">exp</span>(X_intercept <span class="sc">%*%</span> beta_true))</span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rpois</span>(n_val, <span class="at">lambda =</span> mu_y)</span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a>  </span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a></span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a>  }</span>
+<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a>}</span></code></pre></div>
+<p>A summary table here is produced to compare these distances across
+different <span class="math inline">\(\rho\)</span> values.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">kable</span>(l2_table, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;L2 Distance Between Estimated and True Coefficients (log link for Poisson GLM)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>L2 Distance Between Estimated and True Coefficients (log link
+for Poisson GLM)</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">rho=-0.75</th>
+<th align="right">rho=-0.5</th>
+<th align="right">rho=0</th>
+<th align="right">rho=0.5</th>
+<th align="right">rho=0.75</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OLS</td>
+<td align="right">0.2715</td>
+<td align="right">0.2909</td>
+<td align="right">0.2035</td>
+<td align="right">0.2385</td>
+<td align="right">0.2992</td>
+</tr>
+<tr class="even">
+<td align="left">SR</td>
+<td align="right">0.2519</td>
+<td align="right">0.2721</td>
+<td align="right">0.1864</td>
+<td align="right">0.2382</td>
+<td align="right">0.2993</td>
+</tr>
+<tr class="odd">
+<td align="left">GSR</td>
+<td align="right">0.1821</td>
+<td align="right">0.2078</td>
+<td align="right">0.1868</td>
+<td align="right">0.1926</td>
+<td align="right">0.2771</td>
+</tr>
+<tr class="even">
+<td align="left">St</td>
+<td align="right">0.2274</td>
+<td align="right">0.2464</td>
+<td align="right">0.1659</td>
+<td align="right">0.1809</td>
+<td align="right">0.2544</td>
+</tr>
+<tr class="odd">
+<td align="left">DSh</td>
+<td align="right">0.2780</td>
+<td align="right">0.2757</td>
+<td align="right">0.2089</td>
+<td align="right">0.2369</td>
+<td align="right">0.2962</td>
+</tr>
+<tr class="even">
+<td align="left">LW</td>
+<td align="right">0.2004</td>
+<td align="right">0.2499</td>
+<td align="right">0.5471</td>
+<td align="right">0.2115</td>
+<td align="right">0.2859</td>
+</tr>
+<tr class="odd">
+<td align="left">QIS</td>
+<td align="right">0.2527</td>
+<td align="right">0.2666</td>
+<td align="right">0.2090</td>
+<td align="right">0.2165</td>
+<td align="right">0.2963</td>
+</tr>
+<tr class="even">
+<td align="left">Sh</td>
+<td align="right">0.2625</td>
+<td align="right">0.2869</td>
+<td align="right">0.2011</td>
+<td align="right">0.2335</td>
+<td align="right">0.2921</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="sqrt-link-function" class="section level3">
+<h3><em>sqrt</em> Link Function</h3>
+<p>For the Poisson GLM with the sqrt link, the mean response is defined
+as <span class="math inline">\(\mu = \eta^2\)</span> with <span class="math inline">\(\eta = X_{\text{intercept}} \,
+\beta_{\text{true}}\)</span>. The simulation procedure is similar to the
+log link case; however, the responses are generated with Poission
+distribution with <span class="math inline">\(\lambda\)</span> <span class="math inline">\(\mu=\eta^2\)</span>. To address potential
+numerical issues (such as non-positive responses). Models are then fit
+using both the standard GLM (via <code>glm.fit2</code>) and the
+shrinkage-based GLM (via <code>savvy_glm.fit2</code>in
+<code>savvyGLM</code> package).</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>}</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>}</span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a>  </span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>((X_intercept <span class="sc">%*%</span> beta_true)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rpois</span>(n_val, <span class="at">lambda =</span> mu_y)</span>
+<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a>  </span>
+<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a>  }</span>
+<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a>}</span></code></pre></div>
+<p>A summary table here is produced to compare these distances across
+different <span class="math inline">\(\rho\)</span> values.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">kable</span>(l2_table, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;L2 Distance Between Estimated and True Coefficients (sqrt link for Poisson GLM)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>L2 Distance Between Estimated and True Coefficients (sqrt link
+for Poisson GLM)</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">rho=-0.75</th>
+<th align="right">rho=-0.5</th>
+<th align="right">rho=0</th>
+<th align="right">rho=0.5</th>
+<th align="right">rho=0.75</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OLS</td>
+<td align="right">105.8302</td>
+<td align="right">78.9315</td>
+<td align="right">55.8439</td>
+<td align="right">48.2180</td>
+<td align="right">38.8785</td>
+</tr>
+<tr class="even">
+<td align="left">SR</td>
+<td align="right">106.9639</td>
+<td align="right">79.4258</td>
+<td align="right">55.4904</td>
+<td align="right">47.7886</td>
+<td align="right">38.7200</td>
+</tr>
+<tr class="odd">
+<td align="left">GSR</td>
+<td align="right">103.4377</td>
+<td align="right">77.6867</td>
+<td align="right">55.0924</td>
+<td align="right">47.6944</td>
+<td align="right">39.2449</td>
+</tr>
+<tr class="even">
+<td align="left">St</td>
+<td align="right">99.4780</td>
+<td align="right">77.2330</td>
+<td align="right">55.0576</td>
+<td align="right">47.5351</td>
+<td align="right">38.3803</td>
+</tr>
+<tr class="odd">
+<td align="left">DSh</td>
+<td align="right">104.1511</td>
+<td align="right">78.5923</td>
+<td align="right">55.8674</td>
+<td align="right">47.8408</td>
+<td align="right">39.9734</td>
+</tr>
+<tr class="even">
+<td align="left">LW</td>
+<td align="right">104.9087</td>
+<td align="right">78.2375</td>
+<td align="right">56.3488</td>
+<td align="right">48.0411</td>
+<td align="right">39.2115</td>
+</tr>
+<tr class="odd">
+<td align="left">QIS</td>
+<td align="right">104.6722</td>
+<td align="right">78.3262</td>
+<td align="right">56.3039</td>
+<td align="right">48.1902</td>
+<td align="right">39.1141</td>
+</tr>
+<tr class="even">
+<td align="left">Sh</td>
+<td align="right">105.8302</td>
+<td align="right">78.9315</td>
+<td align="right">55.8439</td>
+<td align="right">48.2180</td>
+<td align="right">38.8785</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="gamma-glms" class="section level2">
+<h2>Gamma GLMs</h2>
+<div id="log-link-function-1" class="section level3">
+<h3><em>log</em> Link Function</h3>
+<p>In Gamma GLMs with the log link, the mean response is given by <span class="math inline">\(\mu = \exp(\eta)\)</span> with <span class="math inline">\(\eta = X_{\text{intercept}} \,
+\beta_{\text{true}}\)</span>. Covariates are generated as before, and
+responses are drawn from a Gamma distribution with <em>shape</em> <span class="math inline">\(\mu =\exp(\eta)\)</span>. A retry mechanism is
+used to ensure that all simulated responses are positive, which is
+required by the Gamma model. Models are fit using both the standard GLM
+(via <code>glm.fit2</code>) and the shrinkage-based GLM (via
+<code>savvy_glm.fit2</code>in <code>savvyGLM</code> package).</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>}</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>  base_increment <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>  growth_rate <span class="ot">&lt;-</span> <span class="fl">0.95</span> </span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> base_increment <span class="sc">*</span> (growth_rate <span class="sc">^</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">length.out =</span> <span class="fu">ceiling</span>(p_val <span class="sc">/</span> <span class="dv">2</span>)))</span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> <span class="fu">rep</span>(betas, <span class="at">each =</span> <span class="dv">2</span>)[<span class="dv">1</span><span class="sc">:</span>p_val]</span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>  signs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> betas <span class="sc">*</span> signs</span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>  <span class="fu">return</span>(betas)</span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>}</span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a>  </span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">exp</span>(X_intercept <span class="sc">%*%</span> beta_true))</span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a>  y <span class="ot">&lt;-</span>  <span class="fu">rgamma</span>(n_val, <span class="at">shape =</span> mu_y, <span class="at">scale =</span> <span class="dv">1</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a>  retry_count <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>  <span class="cf">while</span>(<span class="fu">any</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>) <span class="sc">&amp;&amp;</span> retry_count <span class="sc">&lt;</span> <span class="dv">100</span>) {</span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a>    bad_idx <span class="ot">&lt;-</span> <span class="fu">which</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>)</span>
+<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a>    y[bad_idx] <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(<span class="fu">length</span>(bad_idx), <span class="at">shape =</span> mu_y[bad_idx], <span class="at">scale =</span> <span class="dv">1</span>)</span>
+<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a>    retry_count <span class="ot">&lt;-</span> retry_count <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a>  }</span>
+<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a>  </span>
+<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb9-51"><a href="#cb9-51" tabindex="-1"></a></span>
+<span id="cb9-52"><a href="#cb9-52" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb9-53"><a href="#cb9-53" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb9-54"><a href="#cb9-54" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb9-55"><a href="#cb9-55" tabindex="-1"></a>  }</span>
+<span id="cb9-56"><a href="#cb9-56" tabindex="-1"></a>}</span></code></pre></div>
+<p>A summary table here is produced to compare these distances across
+different <span class="math inline">\(\rho\)</span> values.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">kable</span>(l2_table, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;L2 Distance Between Estimated and True Coefficients (log link for Gamma GLM)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>L2 Distance Between Estimated and True Coefficients (log link
+for Gamma GLM)</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">rho=-0.75</th>
+<th align="right">rho=-0.5</th>
+<th align="right">rho=0</th>
+<th align="right">rho=0.5</th>
+<th align="right">rho=0.75</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OLS</td>
+<td align="right">0.4067</td>
+<td align="right">0.3339</td>
+<td align="right">0.2600</td>
+<td align="right">0.2623</td>
+<td align="right">0.3082</td>
+</tr>
+<tr class="even">
+<td align="left">SR</td>
+<td align="right">0.3957</td>
+<td align="right">0.3258</td>
+<td align="right">0.2600</td>
+<td align="right">0.2614</td>
+<td align="right">0.3079</td>
+</tr>
+<tr class="odd">
+<td align="left">GSR</td>
+<td align="right">0.2540</td>
+<td align="right">0.2633</td>
+<td align="right">0.2333</td>
+<td align="right">0.1989</td>
+<td align="right">0.2318</td>
+</tr>
+<tr class="even">
+<td align="left">St</td>
+<td align="right">0.2406</td>
+<td align="right">0.2534</td>
+<td align="right">0.2022</td>
+<td align="right">0.1861</td>
+<td align="right">0.2557</td>
+</tr>
+<tr class="odd">
+<td align="left">DSh</td>
+<td align="right">0.2701</td>
+<td align="right">0.2912</td>
+<td align="right">0.2399</td>
+<td align="right">0.2381</td>
+<td align="right">0.3028</td>
+</tr>
+<tr class="even">
+<td align="left">LW</td>
+<td align="right">0.3683</td>
+<td align="right">0.2895</td>
+<td align="right">0.3023</td>
+<td align="right">0.2252</td>
+<td align="right">0.2911</td>
+</tr>
+<tr class="odd">
+<td align="left">QIS</td>
+<td align="right">0.3691</td>
+<td align="right">0.2860</td>
+<td align="right">0.3001</td>
+<td align="right">0.2409</td>
+<td align="right">0.2990</td>
+</tr>
+<tr class="even">
+<td align="left">Sh</td>
+<td align="right">0.3902</td>
+<td align="right">0.3260</td>
+<td align="right">0.2567</td>
+<td align="right">0.2548</td>
+<td align="right">0.2981</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="sqrt-link-function-1" class="section level3">
+<h3><em>sqrt</em> Link Function</h3>
+<p>For Gamma GLMs with the sqrt link, the mean response is modeled as
+<span class="math inline">\(\mu = \eta^2\)</span> with <span class="math inline">\(\eta = X_{\text{intercept}} \,
+\beta_{\text{true}}\)</span>. Covariates are generated as before, and
+responses are drawn from a Gamma distribution with <em>shape</em> <span class="math inline">\(\mu =\eta^2\)</span>, including a retry mechanism
+to ensure all response values are positive. Fitting the models using
+both the standard GLM (via <code>glm.fit2</code>) and the
+shrinkage-based GLM (via <code>savvy_glm.fit2</code>in
+<code>savvyGLM</code> package).</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>}</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>}</span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>findStartingValues <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, <span class="at">epsilon =</span> <span class="fl">1e-6</span>) {</span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> <span class="fu">Variable</span>(<span class="fu">ncol</span>(x))</span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>  eta <span class="ot">&lt;-</span> x <span class="sc">%*%</span> beta</span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a>  objective <span class="ot">&lt;-</span> <span class="fu">Minimize</span>(<span class="fu">sum_squares</span>(<span class="fu">sqrt</span>(y <span class="sc">+</span> <span class="fl">0.1</span>) <span class="sc">-</span> eta))</span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a>  constraints <span class="ot">&lt;-</span> <span class="fu">list</span>(eta <span class="sc">&gt;=</span> epsilon)</span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a>  problem <span class="ot">&lt;-</span> <span class="fu">Problem</span>(objective, constraints)</span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a>  <span class="fu">psolve</span>(problem, <span class="at">silent =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a>  starting_values <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">value</span>(beta))</span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a>  <span class="fu">return</span>(starting_values)</span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a>}</span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a></span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a></span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a>  </span>
+<span id="cb11-43"><a href="#cb11-43" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb11-44"><a href="#cb11-44" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb11-45"><a href="#cb11-45" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb11-46"><a href="#cb11-46" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>((X_intercept <span class="sc">%*%</span> beta_true)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb11-47"><a href="#cb11-47" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(n_val, <span class="at">shape =</span> mu_y, <span class="at">scale =</span> <span class="dv">1</span>)</span>
+<span id="cb11-48"><a href="#cb11-48" tabindex="-1"></a>  </span>
+<span id="cb11-49"><a href="#cb11-49" tabindex="-1"></a>  retry_count <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb11-50"><a href="#cb11-50" tabindex="-1"></a>  <span class="cf">while</span>(<span class="fu">any</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>) <span class="sc">&amp;&amp;</span> retry_count <span class="sc">&lt;</span> <span class="dv">100</span>) {</span>
+<span id="cb11-51"><a href="#cb11-51" tabindex="-1"></a>    bad_idx <span class="ot">&lt;-</span> <span class="fu">which</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>)</span>
+<span id="cb11-52"><a href="#cb11-52" tabindex="-1"></a>    y[bad_idx] <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(<span class="fu">length</span>(bad_idx), <span class="at">shape =</span> mu_y[bad_idx], <span class="at">scale =</span> <span class="dv">1</span>)</span>
+<span id="cb11-53"><a href="#cb11-53" tabindex="-1"></a>    retry_count <span class="ot">&lt;-</span> retry_count <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb11-54"><a href="#cb11-54" tabindex="-1"></a>  }</span>
+<span id="cb11-55"><a href="#cb11-55" tabindex="-1"></a>  </span>
+<span id="cb11-56"><a href="#cb11-56" tabindex="-1"></a>  starting_values <span class="ot">&lt;-</span> <span class="fu">findStartingValues</span>(X_intercept, y)</span>
+<span id="cb11-57"><a href="#cb11-57" tabindex="-1"></a>  </span>
+<span id="cb11-58"><a href="#cb11-58" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">start =</span> starting_values,</span>
+<span id="cb11-59"><a href="#cb11-59" tabindex="-1"></a>                      <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb11-60"><a href="#cb11-60" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb11-61"><a href="#cb11-61" tabindex="-1"></a></span>
+<span id="cb11-62"><a href="#cb11-62" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb11-63"><a href="#cb11-63" tabindex="-1"></a>    <span class="co"># Added use_parallel = FALSE to dramatically speed up vignette building</span></span>
+<span id="cb11-64"><a href="#cb11-64" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, </span>
+<span id="cb11-65"><a href="#cb11-65" tabindex="-1"></a>                          <span class="at">family =</span> family_type, <span class="at">use_robust_start =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb11-66"><a href="#cb11-66" tabindex="-1"></a>                          <span class="at">use_parallel =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-67"><a href="#cb11-67" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb11-68"><a href="#cb11-68" tabindex="-1"></a>  }</span>
+<span id="cb11-69"><a href="#cb11-69" tabindex="-1"></a>}</span></code></pre></div>
+<p>A summary table here is produced to compare these distances across
+different <span class="math inline">\(\rho\)</span> values.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">kable</span>(l2_table, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;L2 Distance Between Estimated and True Coefficients (sqrt link for Gamma GLM)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>L2 Distance Between Estimated and True Coefficients (sqrt link
+for Gamma GLM)</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">rho=-0.75</th>
+<th align="right">rho=-0.5</th>
+<th align="right">rho=0</th>
+<th align="right">rho=0.5</th>
+<th align="right">rho=0.75</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OLS</td>
+<td align="right">108.1097</td>
+<td align="right">78.2093</td>
+<td align="right">56.4163</td>
+<td align="right">46.8951</td>
+<td align="right">41.9629</td>
+</tr>
+<tr class="even">
+<td align="left">SR</td>
+<td align="right">108.1052</td>
+<td align="right">78.2082</td>
+<td align="right">56.3660</td>
+<td align="right">46.8295</td>
+<td align="right">41.9684</td>
+</tr>
+<tr class="odd">
+<td align="left">GSR</td>
+<td align="right">104.5311</td>
+<td align="right">77.1232</td>
+<td align="right">55.9971</td>
+<td align="right">46.7169</td>
+<td align="right">42.1281</td>
+</tr>
+<tr class="even">
+<td align="left">St</td>
+<td align="right">102.2954</td>
+<td align="right">76.2955</td>
+<td align="right">55.7526</td>
+<td align="right">46.3217</td>
+<td align="right">41.5515</td>
+</tr>
+<tr class="odd">
+<td align="left">DSh</td>
+<td align="right">105.6050</td>
+<td align="right">77.2780</td>
+<td align="right">56.6020</td>
+<td align="right">46.8909</td>
+<td align="right">42.1011</td>
+</tr>
+<tr class="even">
+<td align="left">LW</td>
+<td align="right">105.0065</td>
+<td align="right">76.7574</td>
+<td align="right">56.2635</td>
+<td align="right">46.6498</td>
+<td align="right">41.9816</td>
+</tr>
+<tr class="odd">
+<td align="left">QIS</td>
+<td align="right">104.1095</td>
+<td align="right">77.2196</td>
+<td align="right">55.2965</td>
+<td align="right">47.2840</td>
+<td align="right">42.0942</td>
+</tr>
+<tr class="even">
+<td align="left">Sh</td>
+<td align="right">107.9788</td>
+<td align="right">78.1691</td>
+<td align="right">56.4011</td>
+<td align="right">46.8882</td>
+<td align="right">41.9786</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div>
+</div>
+</div>
+<div id="real-data-analysis" class="section level1">
+<h1>Real Data Analysis</h1>
+<p>In this section, we evaluate the performance of Gamma GLM estimation
+methods using real flood insurance data from three states: Florida (FL),
+Texas (TX), and Louisiana (LA). The dataset covers the period 2014 to
+2023 and includes claims from the National Flood Insurance Programme
+(NFIP). For each state (e.g., Florida (FL) and Louisiana (LA)), the data
+are no provided here, but you can download from NFIP and follow the
+preprocess steps provided in the paper.</p>
+<p>For each year, the dataset is split into a 70% training set and a 30%
+test set. Models are fitted using the standard GLM (via
+<code>glm.fit2</code>) and several shrinkage-based GLM (via
+<code>savvy_glm.fit2</code> with model classes such as SR, GSR, St, DSh,
+and optionally Sh) using two different link functions:</p>
+<ul>
+<li><p>For Gamma GLMs with the <strong>log link</strong>, the mean
+response is modeled as <span class="math inline">\(\mu =
+\exp(\eta)\)</span>.</p></li>
+<li><p>For Gamma GLMs with the <strong>sqrt link</strong>, the mean
+response is modeled as <span class="math inline">\(\mu =
+\eta^2\)</span>.</p></li>
+</ul>
+<p>For each replication, the MSE on the test set is computed. For each
+shrinkage-based GLM, we calculate the ratio</p>
+<p><span class="math display">\[
+\text{MSE Ratio} = \frac{\text{MSE}_{\text{Baseline
+(OLS)}}}{\text{MSE}_{\text{Shrinkage}}}.
+\]</span></p>
+<p>A ratio greater than one indicates that the shrinkage-based GLM
+achieved a lower MSE (i.e., superior performance) compared to the
+standard update. This process is repeated multiple times (e.g., <span class="math inline">\(N=100\)</span> replications per year), and the
+average ratio is computed for each model and each year.</p>
+<p>Here, we just provide two cases and for a detailed account of the
+full data processing and evaluation procedures, please refer to the main
+paper: GLM Solutions via Shrinkage.</p>
+<hr />
+<div id="fl-dataset-with-log-link-function" class="section level2">
+<h2>FL dataset with <em>log</em> Link Function</h2>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Load required packages</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="fu">library</span>(caret)</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="dv">2014</span><span class="sc">:</span><span class="dv">2015</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>)</span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a>Evaluation_results <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(years),</span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>                             <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, years))</span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a></span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>calculate_mse <span class="ot">&lt;-</span> <span class="cf">function</span>(true_values, predicted_values) {</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>  <span class="fu">mean</span>((true_values <span class="sc">-</span> predicted_values)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a>}</span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a></span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a><span class="cf">for</span> (yr <span class="cf">in</span> years) {</span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;Processing year:&quot;</span>, yr, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a>  filename <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">&quot;FL_data_%d.csv&quot;</span>, yr)</span>
+<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a>  data_year <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(filename, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a>  </span>
+<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a>  ratio_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> N, <span class="at">ncol =</span> <span class="fu">length</span>(model_names)<span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>  <span class="fu">colnames</span>(ratio_mat) <span class="ot">&lt;-</span> model_names[<span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a>    <span class="fu">set.seed</span>(yr <span class="sc">*</span> <span class="dv">1000</span> <span class="sc">+</span> i)</span>
+<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a>    train_index <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(data_year[, <span class="dv">1</span>], <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a>    train_data <span class="ot">&lt;-</span> data_year[train_index, ]</span>
+<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a>    test_data <span class="ot">&lt;-</span> data_year[<span class="sc">-</span>train_index, ]</span>
+<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a>    </span>
+<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a>    X_train <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(train_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
+<span id="cb13-37"><a href="#cb13-37" tabindex="-1"></a>    y_train <span class="ot">&lt;-</span> train_data[, <span class="dv">1</span>]</span>
+<span id="cb13-38"><a href="#cb13-38" tabindex="-1"></a>    X_test <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(test_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
+<span id="cb13-39"><a href="#cb13-39" tabindex="-1"></a>    y_test <span class="ot">&lt;-</span> test_data[, <span class="dv">1</span>]</span>
+<span id="cb13-40"><a href="#cb13-40" tabindex="-1"></a>    X_train_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_train)</span>
+<span id="cb13-41"><a href="#cb13-41" tabindex="-1"></a>    X_test_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_test)</span>
+<span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a>  </span>
+<span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a>    model_glm2 <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_train_int, y_train, <span class="at">start =</span> starting_values,</span>
+<span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a>                           <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb13-45"><a href="#cb13-45" tabindex="-1"></a>    y_pred_glm2 <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_glm2<span class="sc">$</span>coefficients)</span>
+<span id="cb13-46"><a href="#cb13-46" tabindex="-1"></a>    mse_ols <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred_glm2)</span>
+<span id="cb13-47"><a href="#cb13-47" tabindex="-1"></a>    <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb13-48"><a href="#cb13-48" tabindex="-1"></a>      model_savvy <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_train_int, y_train, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list,</span>
+<span id="cb13-49"><a href="#cb13-49" tabindex="-1"></a>                                    <span class="at">family =</span> family_type, <span class="at">use_robust_start =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-50"><a href="#cb13-50" tabindex="-1"></a>      y_pred <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_savvy<span class="sc">$</span>coefficients)</span>
+<span id="cb13-51"><a href="#cb13-51" tabindex="-1"></a>      mse_savvy <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred)</span>
+<span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a>      ratio_mat[i, m] <span class="ot">&lt;-</span> mse_ols <span class="sc">/</span> mse_savvy</span>
+<span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a>    }</span>
+<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a>  }</span>
+<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a>  avg_ratios <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">colMeans</span>(ratio_mat, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb13-56"><a href="#cb13-56" tabindex="-1"></a>  Evaluation_results[, <span class="fu">as.character</span>(yr)] <span class="ot">&lt;-</span> avg_ratios</span>
+<span id="cb13-57"><a href="#cb13-57" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>Evaluation_results_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(Evaluation_results)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">kable</span>(Evaluation_results_df, <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Average MSE Ratio (OLS / Shrinkage) for Each Year (Gamma GLM with Log Link)&quot;</span>)</span></code></pre></div>
+</div>
+<div id="la-dataset-with-sqrt-link-function" class="section level2">
+<h2>LA dataset with <em>sqrt</em> Link Function</h2>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Load required packages</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="fu">library</span>(caret)</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="dv">2014</span><span class="sc">:</span><span class="dv">2023</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>)</span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a>Evaluation_results <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(years),</span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>                             <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, years))</span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a>calculate_mse <span class="ot">&lt;-</span> <span class="cf">function</span>(true_values, predicted_values) {</span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a>  <span class="fu">mean</span>((true_values <span class="sc">-</span> predicted_values)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a>}</span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a></span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="cf">for</span> (yr <span class="cf">in</span> years) {</span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;Processing year:&quot;</span>, yr, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a>  filename <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">&quot;LA_data_%d.csv&quot;</span>, yr)</span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a>  data_year <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(filename, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a>  </span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a>  ratio_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> N, <span class="at">ncol =</span> <span class="fu">length</span>(model_names)<span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a>  <span class="fu">colnames</span>(ratio_mat) <span class="ot">&lt;-</span> model_names[<span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a>    <span class="fu">set.seed</span>(yr <span class="sc">*</span> <span class="dv">1000</span> <span class="sc">+</span> i)</span>
+<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a>    train_index <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(data_year[, <span class="dv">1</span>], <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a>    train_data <span class="ot">&lt;-</span> data_year[train_index, ]</span>
+<span id="cb15-34"><a href="#cb15-34" tabindex="-1"></a>    test_data <span class="ot">&lt;-</span> data_year[<span class="sc">-</span>train_index, ]</span>
+<span id="cb15-35"><a href="#cb15-35" tabindex="-1"></a>    </span>
+<span id="cb15-36"><a href="#cb15-36" tabindex="-1"></a>    X_train <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(train_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
+<span id="cb15-37"><a href="#cb15-37" tabindex="-1"></a>    y_train <span class="ot">&lt;-</span> train_data[, <span class="dv">1</span>]</span>
+<span id="cb15-38"><a href="#cb15-38" tabindex="-1"></a>    X_test <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(test_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
+<span id="cb15-39"><a href="#cb15-39" tabindex="-1"></a>    y_test <span class="ot">&lt;-</span> test_data[, <span class="dv">1</span>]</span>
+<span id="cb15-40"><a href="#cb15-40" tabindex="-1"></a>    X_train_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_train)</span>
+<span id="cb15-41"><a href="#cb15-41" tabindex="-1"></a>    X_test_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_test)</span>
+<span id="cb15-42"><a href="#cb15-42" tabindex="-1"></a>  </span>
+<span id="cb15-43"><a href="#cb15-43" tabindex="-1"></a>    model_glm2 <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_train_int, y_train, <span class="at">start =</span> starting_values,</span>
+<span id="cb15-44"><a href="#cb15-44" tabindex="-1"></a>                           <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb15-45"><a href="#cb15-45" tabindex="-1"></a>    y_pred_glm2 <span class="ot">&lt;-</span> (X_test_int <span class="sc">%*%</span> model_glm2<span class="sc">$</span>coefficients)<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb15-46"><a href="#cb15-46" tabindex="-1"></a>    mse_ols <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred_glm2)</span>
+<span id="cb15-47"><a href="#cb15-47" tabindex="-1"></a>    <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb15-48"><a href="#cb15-48" tabindex="-1"></a>      model_savvy <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_train_int, y_train, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list,</span>
+<span id="cb15-49"><a href="#cb15-49" tabindex="-1"></a>                                    <span class="at">family =</span> family_type, <span class="at">use_robust_start =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb15-50"><a href="#cb15-50" tabindex="-1"></a>      y_pred <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_savvy<span class="sc">$</span>coefficients)</span>
+<span id="cb15-51"><a href="#cb15-51" tabindex="-1"></a>      mse_savvy <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred)</span>
+<span id="cb15-52"><a href="#cb15-52" tabindex="-1"></a>      ratio_mat[i, m] <span class="ot">&lt;-</span> mse_ols <span class="sc">/</span> mse_savvy</span>
+<span id="cb15-53"><a href="#cb15-53" tabindex="-1"></a>    }</span>
+<span id="cb15-54"><a href="#cb15-54" tabindex="-1"></a>  }</span>
+<span id="cb15-55"><a href="#cb15-55" tabindex="-1"></a>  avg_ratios <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">colMeans</span>(ratio_mat, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb15-56"><a href="#cb15-56" tabindex="-1"></a>  Evaluation_results[, <span class="fu">as.character</span>(yr)] <span class="ot">&lt;-</span> avg_ratios</span>
+<span id="cb15-57"><a href="#cb15-57" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>Evaluation_results_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(Evaluation_results)</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">kable</span>(Evaluation_results_df, <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Average MSE Ratio (OLS / Shrinkage) for Each Year (Gamma GLM with Log Link)&quot;</span>)</span></code></pre></div>
+<hr />
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

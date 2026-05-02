@@ -1,0 +1,276 @@
+
+# Ridge Regression Estimation Function
+RR_est <- function(x, y) {
+  lambda_grid <- 10^seq(-6, 2, length = 50)
+  cv_fit <- cv.glmnet(x, y, alpha = 0, lambda = lambda_grid, intercept = FALSE)
+  lambda_min <- cv_fit$lambda.min
+  theta_rr <- as.vector(coef(cv_fit, s = "lambda.min")[-1, 1])
+  fitted_values <- as.vector(predict(cv_fit, newx = x, s = lambda_min))
+  df_eff <- sum((svd(x)$d)^2 / ((svd(x)$d)^2 + lambda_min))
+  RSS <- sum((y - fitted_values)^2)
+  sigma_rr <- sqrt(sum((RSS / (length(y) - df_eff))^2))
+  list(est = theta_rr, sigma = sigma_rr, optimal_lambda = lambda_min)
+}
+
+# OLS
+OLS_est <- function(x, y) {
+  if (qr(x)$rank < ncol(x)) return(RR_est(x, y))
+  fit <- lm(y ~ x - 1)
+  list(est = as.vector(coef(fit)), sigma = summary(fit)$sigma, optimal_lambda = 0)
+}
+
+# Sigma_lambda
+Sigma_Lambda <- function(x, lambda) {
+  crossprod(x) + lambda * diag(ncol(x))
+}
+
+# St Estimator
+St_ost <- function(x, y) {
+  ols <- OLS_est(x, y)
+  est <- ols$est
+  sigma2 <- ols$sigma^2
+  lambda <- ols$optimal_lambda
+
+  Sigma_inv <- MASS::ginv(Sigma_Lambda(x, lambda))
+  M0 <- sigma2 * sum(diag(Sigma_inv))
+  a_star <- sum(est^2) / (sum(est^2) + M0)
+
+  as.vector(a_star * est)
+}
+
+# DSh Estimator
+DSh_ost <- function(x, y) {
+  ols <- OLS_est(x, y)
+  est <- ols$est
+  sigma2 <- ols$sigma^2
+  lambda <- ols$optimal_lambda
+
+  Sigma_inv <- MASS::ginv(Sigma_Lambda(x, lambda))
+  b_k <- function(k) {
+    beta_k2 <- est[k]^2
+    beta_k2 / (beta_k2 + sigma2 * Sigma_inv[k, k])
+  }
+
+  b_vec <- sapply(seq_along(est), b_k)
+  as.vector(b_vec * est)
+}
+
+# SR Estimator
+SR_ost <- function(x, y) {
+  ols <- OLS_est(x, y)
+  est <- ols$est
+  sigma2 <- ols$sigma^2
+  lambda <- ols$optimal_lambda
+  p <- length(est)
+
+  Sigma_inv <- MASS::ginv(Sigma_Lambda(x, lambda))
+  J <- matrix(1, p, p)
+  u <- rep(1, p)
+
+  al_u <- function(l) t(u) %*% (Sigma_inv %^% l) %*% u
+  a0 <- sum(u^2)
+  a1 <- al_u(1)
+  a2 <- al_u(2)
+  a3 <- al_u(3)
+  delta <- sigma2 * (a0 * a3 - a1 * a2) + a3 * (t(est) %*% u)^2
+
+  if (delta > 0) {
+    mu <- (sigma2 * a2) / delta
+    scalar <- as.numeric(mu / (1 + mu * a1))
+    adj <- scalar * Sigma_inv %*% J
+  } else {
+    adj <- Sigma_inv %*% J
+  }
+
+  as.vector((diag(p) - adj) %*% est)
+}
+
+# GSR Estimator
+GSR_ost <- function(x, y) {
+  ols <- OLS_est(x, y)
+  est <- ols$est
+  sigma2 <- ols$sigma^2
+  lambda <- ols$optimal_lambda
+  p <- length(est)
+  Sigma <- Sigma_Lambda(x, lambda)
+  eig <- eigen(Sigma, symmetric = TRUE)
+  U <- eig$vectors
+  eigenvalues <- eig$values
+  beta_proj <- as.vector(crossprod(U, est))
+  mu_star <- sigma2 / (beta_proj^2)
+  scalar_coeffs <- mu_star / eigenvalues / (1 + mu_star / eigenvalues)
+  adjustment_matrix <- diag(1, p) - U %*% diag(scalar_coeffs) %*% t(U)
+  est_GSR <- adjustment_matrix %*% est
+  as.vector(est_GSR)
+}
+
+# Sylvester equation solver.
+# Solves the Sylvester equation A * X + X * B = C using a Schur decomposition method.
+# This code for solving the Sylvester equation was adapted from the biADMM R code,
+# available at: https://github.com/sakuramomo1005/biADMM/blob/master/R/sylvester.R
+# Original Author: sakuramomo1005
+sylvester <- function(A, B, C, tol = 1e-4) {
+  A1 <- Schur(A)
+  Q1 <- A1$Q
+  R1 <- A1$T
+
+  A2 <- Schur(B)
+  Q2 <- A2$Q
+  R2 <- A2$T
+
+  C_trans <- t(Q1) %*% C %*% Q2
+  n <- nrow(R2)
+  p <- ncol(R1)
+  X <- matrix(0, p, n)
+  I <- diag(p)
+  k <- 1
+
+  while (k <= n) {
+    if (k < n && abs(R2[k+1, k]) >= tol) {
+      # Process 2x2 block.
+      r11 <- R2[k, k]
+      r12 <- R2[k, k+1]
+      r21 <- R2[k+1, k]
+      r22 <- R2[k+1, k+1]
+      if (k == 1) {
+        temp <- matrix(0, p, 2)
+      } else {
+        temp <- X[, 1:(k-1), drop = FALSE] %*% R2[1:(k-1), k:(k+1), drop = FALSE]
+      }
+      b_block <- C_trans[, k:(k+1), drop = FALSE] - temp
+      A_mat <- R1 %*% R1 + (r11 + r22) * R1 + (r11 * r22 - r12 * r21) * I
+      X[, k:(k+1)] <- ginv(A_mat) %*% b_block
+      k <- k + 2
+    } else {
+      # Process single column.
+      if (k == 1) {
+        temp <- matrix(0, p, 1)
+      } else {
+        temp <- X[, 1:(k-1), drop = FALSE] %*% R2[1:(k-1), k, drop = FALSE]
+      }
+      b_col <- C_trans[, k, drop = FALSE] - temp
+      X[, k] <- ginv(R1 + R2[k, k] * I) %*% b_col
+      k <- k + 1
+    }
+  }
+  Q1 %*% X %*% t(Q2)
+}
+
+Sh_ost <- function(x, y) {
+  ols <- OLS_est(x, y)
+  est <- ols$est
+  sigma2 <- ols$sigma^2
+  lambda <- ols$optimal_lambda
+  Sigma_inv <- MASS::ginv(Sigma_Lambda(x, lambda))
+
+  B <- est %*% t(est)
+  C_star <- sylvester(Sigma_inv, B, B)
+  as.vector(C_star %*% est)
+}
+
+# LW (2004)
+cov1Para <- function(Y, k = -1) {
+  dim.Y <- dim(Y)
+  N <- dim.Y[1]
+  p <- dim.Y[2]
+  if (k < 0) {    # demean the data and set k = 1
+    Y <- scale(Y, scale = F)
+    k <- 1
+  }
+  n <- N - k    # effective sample size
+  c <- p / n    # concentration ratio
+  sample <- (t(Y) %*% Y) / n
+
+  # compute shrinkage target
+  meanvar <- mean(diag(sample))
+  target <- meanvar * diag(p)
+
+  # estimate the parameter that we call pi in Ledoit and Wolf (2003, JEF)
+  Y2 <- Y^2
+  sample2 <- (t(Y2) %*% Y2) / n
+  piMat <- sample2 - sample^2
+  pihat <- sum(piMat)
+
+  # estimate the parameter that we call gamma in Ledoit and Wolf (2003, JEF)
+  gammahat <- norm(c(sample - target), type = "2")^2
+
+  # diagonal part of the parameter that we call rho
+  rho_diag <- 0
+
+  # off-diagonal part of the parameter that we call rho
+  rho_off <- 0
+
+  # compute shrinkage intensity
+  rhohat <- rho_diag + rho_off
+  kappahat <- (pihat - rhohat) / gammahat
+  shrinkage <- max(0, min(1, kappahat / n))
+
+  # compute shrinkage estimator
+  sigmahat <- shrinkage * target + (1 - shrinkage) * sample
+}
+
+
+LW_est <- function(x, y) {
+  Sigma_LW <- cov1Para(x, k = 0)
+  N <- nrow(x)
+  XY <- crossprod(x, y) / N
+  beta <- tryCatch({
+    solve(Sigma_LW, XY)
+  }, error = function(e) {
+    MASS::ginv(Sigma_LW) %*% XY
+  })
+  return(as.vector(beta))
+}
+
+# QIS: LW (2022)
+rep_row <- function(x, n){
+  matrix(rep(x, each = n), nrow = n)
+}
+
+qis <- function(Y, k = -1) {
+  dim.Y <- dim(Y)
+  N <- dim.Y[1]
+  p <- dim.Y[2]
+  if (k < 0) {    # demean the data and set k = 1
+    Y <- scale(Y, scale = F)
+    k <- 1
+  }
+  n <- N - k    # effective sample size
+  c <- p / n    # concentration ratio
+  sample <- (t(Y) %*% Y) / n    # sample covariance matrix
+  sample <- (t(sample) + sample) / 2   # enforce symmetry (even more)
+  spectral <- eigen(sample, symmetric = T)    # spectral decompositon
+  lambda <- spectral$values[p:1]    # sort eigenvalues in ascending order
+  u <- spectral$vectors[,p:1]    # eigenvectors follow their eigenvalues
+  h <- min(c^2, 1/c^2)^0.35 / p^0.35    # smoothing parameter
+  invlambda <- 1 / lambda[max(1, p-n+1):p]    # inverse of non-null eigenvalues
+  Lj <- rep_row(invlambda, min(p, n))    # like 1 / lambda_j
+  Lj.i <- Lj - t(Lj)    # like (1 / lambda_j) - (1 / lambda_i)
+  theta <- rowMeans(Lj * Lj.i / (Lj.i^2 + h^2 * Lj^2))    # smoothed Stein shrinker
+  Htheta <- rowMeans(Lj * (h * Lj) / (Lj.i^2 + h^2 * Lj^2)) # its conjugate
+  Atheta2 <- theta^2 + Htheta^2    # its squared amplitude
+  if (p <= n)    # case where sample covariance matrix is not singular
+    delta <- 1 / ((1 - c)^2 * invlambda + 2 * c * (1 - c) * invlambda * theta +
+                    c^2 * invlambda * Atheta2)           # optimally shrunk eigenvalues
+  else {    # case where sample covariance matrix is singular
+    delta0 <- 1 / ((c - 1) * mean(invlambda))     # shrinkage of null eigenvalues
+    delta <- c(rep(delta0, p - n), 1 / (invlambda * Atheta2));
+  }
+  deltaQIS <- delta * (sum(lambda) / sum(delta))    # preserve trace
+  sigmahat <- u %*% diag(deltaQIS) %*% t(u)    #reconstruct covariance matrix
+}
+
+
+QIS_est <- function(x, y) {
+  Sigma_QIS <- qis(x, k = 0)
+  N <- nrow(x)
+  XY <- crossprod(x, y) / N
+  beta <- tryCatch({
+    solve(Sigma_QIS, XY)
+  }, error = function(e) {
+    MASS::ginv(Sigma_QIS) %*% XY
+  })
+  return(as.vector(beta))
+}
+
+

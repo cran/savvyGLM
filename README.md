@@ -1,0 +1,116 @@
+# `savvyGLM`: Shrinkage Methods for Generalized Linear Models
+
+The `savvyGLM` package offers a complete framework for fitting shrinkage estimators in *generalized linear models (GLMs)*. It integrates several shrinkage methods into the *Iteratively Reweighted Least Squares (IRLS)* algorithm to improve both convergence and estimation accuracy, particularly when standard maximum likelihood estimation is challenged by issues like multicollinearity or a high number of predictors. Shrinkage estimators introduce a small bias that produces a large reduction in variance, making the IRLS estimates more reliable than those based solely on the traditional OLS update.
+
+For further details on the core shrinkage estimators employed in this package, please refer to [*Slab and Shrinkage Linear Regression Estimation*](https://openaccess.city.ac.uk/id/eprint/35005/).
+
+This package builds on theoretical work discussed in:
+
+Asimit, V., Avramescu, O., Chen, Z., Rivas, D., & Senatore, C. (2026). *GLM Solutions via Shrinkage*.
+
+The official documentation site is available at: <https://Ziwei-ChenChen.github.io/savvyGLM/>
+
+If you are interested in applying shrinkage methods within standard linear regression, please refer to the companion package [`savvySh`](https://CRAN.R-project.org/package=savvySh).
+
+## Installation Guide
+
+You can install the development version of `savvyGLM` directly from GitHub:
+
+``` r
+remotes::install_github("Ziwei-ChenChen/savvyGLM")
+```
+
+Once installed, load the package:
+
+``` r
+library(savvyGLM)
+```
+
+## Features
+
+The package supports several shrinkage approaches within IRLS algorithm, including:
+
+- **Stein Estimator (St):** Applies a single shrinkage factor to all coefficients.
+
+- **Diagonal Shrinkage (DSh):** Applies separate shrinkage factors to each coefficient.
+
+- **Slab Regression (SR):** Adds a penalty that shrinks the solution along a fixed direction.
+
+- **Generalized Slab Regression (GSR):** Extends SR by allowing shrinkage along multiple directions.
+
+- **Ledoit-Wolf Linear Shrinkage (LW):** Implements linear shrinkage towards a well-conditioned, one-parameter target matrix.
+
+- **Quadratic-Inverse Shrinkage (QIS):** A high-performance nonlinear shrinkage estimator for large covariance matrices.
+
+- **Shrinkage Estimator (Sh):** Uses a full shrinkage matrix estimated by solving a *Sylvester equation*. This method is optional due to its higher computational cost.
+
+These methods build on the robust features of the `glm2` package—such as step-halving—to further enhance the performance of GLMs.
+
+## Usage
+
+This are two basic examples that shows you how to solve a common/non-common problem:
+
+``` r
+set.seed(123)
+n <- 100
+p <- 5
+x <- matrix(rnorm(n * p), n, p)
+beta_true <- c(1, 0.5, -0.5, 1, -1)
+eta <- x %*% beta_true
+prob <- 1 / (1 + exp(-eta))
+y <- rbinom(n, size = 1, prob = prob)
+
+fit <- savvy_glm.fit2(
+  x      = cbind(1, x), 
+  y      = y,
+  model_class = "SR",
+  family = binomial(link = "logit"),
+  control = glm.control(trace = TRUE)
+)
+print(fit$coefficients)
+print(fit$chosen_fit)
+```
+
+``` r
+library(statmod)
+set.seed(12123)
+n <- 100
+p <- 3
+x <- matrix(rnorm(n * p), n, p)
+beta_true <- c(0.5, 0.3, 0.8)
+eta <- x %*% beta_true
+mu <- exp(eta) 
+y <- statmod::rinvgauss(n, mean = mu, shape = 2)
+
+fit <- savvy_glm.fit2(
+  x = cbind(1, x),
+  y = y,
+  family = inverse.gaussian(link = "log"),
+  model_class = c("SR", "DSh", "LW"),
+  control = glm.control(trace = TRUE)
+)
+coef(fit)
+print(fit$chosen_fit)
+```
+
+``` r
+set.seed(124)
+x <- rnorm(100)
+y <- rbinom(100, 1, plogis(x))
+# need to set a starting value for the next fit
+fit <- savvy_glm2(y ~ x, family = quasi(variance = "mu(1-mu)", 
+                 link = "logit"), start = c(0,1))
+summary(fit)
+coef(fit)
+print(fit$chosen_fit)
+```
+
+## Authors
+
+- Ziwei Chen – [ziwei.chen.3\@citystgeorges.ac.uk](mailto:Ziwei.Chen.3@citystgeorges.ac.uk)
+- Vali Asimit – [asimit\@citystgeorges.ac.uk](mailto:asimit@citystgeorges.ac.uk)
+- Claudio Senatore – [Claudio.Senatore\@sas.com](mailto:Claudio.Senatore@sas.com)
+
+## License
+
+This package is licensed under the GPL (\>= 3) License.
