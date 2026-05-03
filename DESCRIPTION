@@ -1,7 +1,7 @@
 Package: savvyGLM
 Type: Package
 Title: Generalized Linear Models with Slab and Shrinkage Estimators
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: 
     c(person(given = "Ziwei", family = "Chen", role = c("aut", "cre"),
              email = "Ziwei.Chen.3@citystgeorges.ac.uk",
@@ -28,17 +28,16 @@ URL: https://Ziwei-ChenChen.github.io/savvyGLM/
 BugReports: https://github.com/ziwei-chenchen/savvyGLM/issues
 Encoding: UTF-8
 RoxygenNote: 7.3.2
-Depends: R (>= 4.3.0)
+Depends: R (>= 3.6.0)
 Imports: stats, MASS, glmnet, expm, parallel, glm2, utils, Matrix, CVXR
-        (>= 1.8.0)
 Suggests: devtools, testthat (>= 3.0.0), knitr, rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2026-05-03 12:42:39 UTC; 11605
+Packaged: 2026-05-03 13:32:52 UTC; 11605
 Author: Ziwei Chen [aut, cre] (ORCID: <https://orcid.org/0009-0009-6376-3850>),
   Vali Asimit [aut] (ORCID: <https://orcid.org/0000-0002-7706-0066>),
   Claudio Senatore [aut]
 Maintainer: Ziwei Chen <Ziwei.Chen.3@citystgeorges.ac.uk>
 Repository: CRAN
-Date/Publication: 2026-05-03 13:00:02 UTC
+Date/Publication: 2026-05-03 14:50:02 UTC
