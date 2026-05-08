@@ -4,7 +4,6 @@ knitr::opts_chunk$set(
   comment = "#>")
 
 ## ----warning=FALSE------------------------------------------------------------
-# Load packages
 library(savvyGLM)
 library(MASS)
 library(glm2)
@@ -64,7 +63,6 @@ l2_table <- as.data.frame(l2_matrix)
 kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Coefficients (Balanced LR)")
 
 ## ----warning=FALSE------------------------------------------------------------
-# Load packages
 library(savvyGLM)
 library(MASS)
 library(glm2)
@@ -124,7 +122,6 @@ l2_table <- as.data.frame(l2_matrix)
 kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Coefficients (Imbalanced LR)")
 
 ## ----warning=FALSE------------------------------------------------------------
-# Load packages
 library(savvyGLM)
 library(MASS)
 library(glm2)
@@ -180,7 +177,6 @@ l2_table <- as.data.frame(l2_matrix)
 kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Coefficients (log link for Poisson GLM)")
 
 ## ----warning=FALSE------------------------------------------------------------
-# Load packages
 library(savvyGLM)
 library(MASS)
 library(glm2)
@@ -232,7 +228,6 @@ l2_table <- as.data.frame(l2_matrix)
 kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Coefficients (sqrt link for Poisson GLM)")
 
 ## ----warning=FALSE------------------------------------------------------------
-# Load packages
 library(savvyGLM)
 library(MASS)
 library(glm2)
@@ -273,12 +268,7 @@ for (j in seq_along(rho_vals)) {
   beta_true <- theta_func(p_val + 1)
   mu_y <- as.vector(exp(X_intercept %*% beta_true))
   y <-  rgamma(n_val, shape = mu_y, scale = 1)
-  retry_count <- 0
-  while(any(y <= 0) && retry_count < 100) {
-    bad_idx <- which(y <= 0)
-    y[bad_idx] <- rgamma(length(bad_idx), shape = mu_y[bad_idx], scale = 1)
-    retry_count <- retry_count + 1
-  }
+  y <- pmax(y, 1e-4)
   
   fit_ols <- glm.fit2(X_intercept, y, control = control_list, family = family_type)
   l2_matrix["OLS", j] <- norm(fit_ols$coefficients - beta_true, type = "2")
@@ -298,6 +288,7 @@ library(savvyGLM)
 library(MASS)
 library(glm2)
 library(knitr)
+library(CVXR)
 
 set.seed(123)
 n_val <- 500
@@ -341,25 +332,17 @@ for (j in seq_along(rho_vals)) {
   beta_true <- theta_func(p_val + 1)
   mu_y <- as.vector((X_intercept %*% beta_true)^2)
   y <- rgamma(n_val, shape = mu_y, scale = 1)
-  
-  retry_count <- 0
-  while(any(y <= 0) && retry_count < 100) {
-    bad_idx <- which(y <= 0)
-    y[bad_idx] <- rgamma(length(bad_idx), shape = mu_y[bad_idx], scale = 1)
-    retry_count <- retry_count + 1
-  }
+  y <- pmax(y, 1e-4)
   
   starting_values <- findStartingValues(X_intercept, y)
-  
+
   fit_ols <- glm.fit2(X_intercept, y, start = starting_values,
                       control = control_list, family = family_type)
   l2_matrix["OLS", j] <- norm(fit_ols$coefficients - beta_true, type = "2")
 
   for (m in model_names[-1]) {
-    # Added use_parallel = FALSE to dramatically speed up vignette building
     fit <- savvy_glm.fit2(X_intercept, y, model_class = m, control = control_list, 
-                          family = family_type, use_robust_start = TRUE, 
-                          use_parallel = FALSE)
+                          family = family_type, use_robust_start = TRUE)
     l2_matrix[m, j] <- norm(fit$coefficients - beta_true, type = "2")
   }
 }
@@ -369,7 +352,6 @@ l2_table <- as.data.frame(l2_matrix)
 kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Coefficients (sqrt link for Gamma GLM)")
 
 ## ----eval=FALSE, warning=FALSE------------------------------------------------
-# # Load required packages
 # library(savvyGLM)
 # library(MASS)
 # library(glm2)
@@ -379,7 +361,7 @@ kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Co
 # 
 # set.seed(1234)
 # years <- 2014:2015
-# model_names <- c("OLS", "SR", "GSR", "St", "DSh")
+# model_names <- c("OLS", "SR", "GSR", "St", "DSh", "LW", "QIS")
 # N <- 10
 # control_list <- list(maxit = 250, epsilon = 1e-6, trace = FALSE)
 # family_type <- Gamma(link = "log")
@@ -416,8 +398,7 @@ kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Co
 #     y_pred_glm2 <- exp(X_test_int %*% model_glm2$coefficients)
 #     mse_ols <- calculate_mse(y_test, y_pred_glm2)
 #     for (m in model_names[-1]) {
-#       model_savvy <- savvy_glm.fit2(X_train_int, y_train, model_class = m, control = control_list,
-#                                     family = family_type, use_robust_start = TRUE)
+#       model_savvy <- savvy_glm.fit2(X_train_int, y_train, model_class = m, control = control_list, family = family_type)
 #       y_pred <- exp(X_test_int %*% model_savvy$coefficients)
 #       mse_savvy <- calculate_mse(y_test, y_pred)
 #       ratio_mat[i, m] <- mse_ols / mse_savvy
@@ -443,7 +424,7 @@ kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Co
 # 
 # set.seed(1234)
 # years <- 2014:2023
-# model_names <- c("OLS", "SR", "GSR", "St", "DSh")
+# model_names <- c("OLS", "SR", "GSR", "St", "DSh", "LW", "QIS")
 # N <- 100
 # control_list <- list(maxit = 250, epsilon = 1e-6, trace = FALSE)
 # family_type <- Gamma(link = "sqrt")
@@ -480,8 +461,7 @@ kable(l2_table, digits = 4, caption = "L2 Distance Between Estimated and True Co
 #     y_pred_glm2 <- (X_test_int %*% model_glm2$coefficients)^2
 #     mse_ols <- calculate_mse(y_test, y_pred_glm2)
 #     for (m in model_names[-1]) {
-#       model_savvy <- savvy_glm.fit2(X_train_int, y_train, model_class = m, control = control_list,
-#                                     family = family_type, use_robust_start = TRUE)
+#       model_savvy <- savvy_glm.fit2(X_train_int, y_train, model_class = m, control = control_list, family = family_type)
 #       y_pred <- exp(X_test_int %*% model_savvy$coefficients)
 #       mse_savvy <- calculate_mse(y_test, y_pred)
 #       ratio_mat[i, m] <- mse_ols / mse_savvy

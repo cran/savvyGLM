@@ -380,7 +380,8 @@ traditional non-penalized implementation.</p>
 in <code>glm2</code>.</p></li>
 <li><p>Replace the OLS update with one of several shrinkage estimators
 (e.g., <code>St_ost</code>, <code>DSh_ost</code>, <code>SR_ost</code>,
-<code>GSR_ost</code>, and optionally <code>Sh_ost</code>).</p></li>
+<code>GSR_ost</code>, <code>LW_ost</code>, <code>QIS_ost</code>, and
+optionally <code>Sh_ost</code>).</p></li>
 <li><p>Employ parallelization when multiple candidate methods are
 specified.</p></li>
 </ul>
@@ -392,15 +393,16 @@ includes <code>Sh</code>(since Sh is time-consuming):</p>
 <ol style="list-style-type: decimal">
 <li><p><strong>Custom Optimization Methods:</strong> Implements
 shrinkage estimators (<code>St_ost</code>, <code>DSh_ost</code>,
-<code>SR_ost</code>, <code>GSR_ost</code>, and optionally
-<code>Sh_ost</code>) that replace the standard OLS update in
-IRLS.</p></li>
+<code>SR_ost</code>, <code>GSR_ost</code>, <code>LW_ost</code>,
+<code>QIS_ost</code>, and optionally <code>Sh_ost</code>) that replace
+the standard OLS update in IRLS.</p></li>
 <li><p><strong>Flexible Model Choice:</strong> The model_class argument
 allows users to choose one or more shrinkage methods. By default, only
-<code>&quot;St&quot;</code>, <code>&quot;DSh&quot;</code>, <code>&quot;SR&quot;</code>, and
-<code>&quot;GSR&quot;</code> are evaluated. Including <code>&quot;Sh&quot;</code> is
-optional because solving the Sylvester equation required by
-<code>Sh_ost</code> is computationally intensive.</p></li>
+<code>&quot;St&quot;</code>, <code>&quot;DSh&quot;</code>, <code>&quot;SR&quot;</code>,
+<code>&quot;GSR&quot;</code>, <code>&quot;LW&quot;</code>, and <code>&quot;QIS&quot;</code> are
+evaluated. Including <code>&quot;Sh&quot;</code> is optional because solving the
+Sylvester equation required by <code>Sh_ost</code> is computationally
+intensive.</p></li>
 </ol>
 <ul>
 <li><strong>Parallel Evaluation:</strong> When multiple candidate
@@ -445,11 +447,12 @@ process.</td>
 <td><code>model_class</code></td>
 <td>A character vector specifying the shrinkage model(s) to be used.
 Allowed values are <code>&quot;St&quot;</code>, <code>&quot;DSh&quot;</code>,
-<code>&quot;SR&quot;</code>, <code>&quot;GSR&quot;</code>, and <code>&quot;Sh&quot;</code>. If
-multiple values are given, they are run in parallel and the best is
-chosen by AIC. If <code>&quot;Sh&quot;</code> is not included, it is omitted from
-the evaluation.</td>
-<td><code>c(&quot;St&quot;, &quot;DSh&quot;, &quot;SR&quot;, &quot;GSR&quot;)</code></td>
+<code>&quot;SR&quot;</code>, <code>&quot;GSR&quot;</code>, <code>&quot;LW&quot;</code>, and
+<code>&quot;QIS&quot;</code> and <code>&quot;Sh&quot;</code>. If multiple values are given,
+they are run in parallel and the best is chosen by AIC. If
+<code>&quot;Sh&quot;</code> is not included, it is omitted from the
+evaluation.</td>
+<td><code>c(&quot;St&quot;, &quot;DSh&quot;, &quot;SR&quot;, &quot;GSR&quot;, &quot;LW&quot;, &quot;QIS&quot;)</code></td>
 </tr>
 <tr class="odd">
 <td><code>start</code>, <code>etastart</code>, <code>mustart</code></td>
@@ -490,24 +493,23 @@ AIC among the methods tested.</td>
 <td><code>FALSE</code></td>
 </tr>
 <tr class="odd">
-<td><strong>Key Output</strong></td>
-<td><strong>Description</strong></td>
-<td><strong>Notes</strong></td>
-</tr>
-<tr class="even">
-<td><code>chosen_fit</code></td>
-<td>The name of the shrinkage method selected based on the lowest AIC.
-If only one method is specified in <code>model_class</code>, then
-<code>chosen_fit</code> will simply return that method’s name.</td>
-<td>Returned in the final model object.</td>
-</tr>
-<tr class="odd">
-<td><code>coefficients</code>, <code>residuals</code>, etc.</td>
-<td>The usual GLM components, similar to those returned by <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/glm.html"><code>glm.fit</code></a>.</td>
-<td>See documentation for full details.</td>
+<td><code>use_robust_start</code></td>
+<td>Logical. <span style="color:blue">If <code>TRUE</code>, uses an
+optimization-based approach (via the CVXR package) to calculate robust
+starting values for fragile link functions (</span>e.g. “sqrt”<span style="color:blue">).</span></td>
+<td><code>FALSE</code></td>
 </tr>
 </tbody>
 </table>
+<div class="line-block"><strong>Key Output</strong> |
+<strong>Description</strong> | <strong>Notes</strong> |<br />
+<code>chosen_fit</code> | The name of the shrinkage method selected
+based on the lowest AIC. If only one method is specified in
+<code>model_class</code>, then <code>chosen_fit</code> will simply
+return that method’s name. | Returned in the final model object. |<br />
+<code>coefficients</code>, <code>residuals</code>, etc. | The usual GLM
+components, similar to those returned by <a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/glm.html"><code>glm.fit</code></a>.
+| See documentation for full details. |</div>
 <p>This vignette provides an overview of the methods implemented in
 <code>savvyGLM</code> and demonstrates how to use them on <a href="#simulation-examples">simulated data</a> and <a href="#real-data-analysis">real data</a>. We begin with a theoretical
 overview of each shrinkage class and GLM with IRLS, then walk through
@@ -760,76 +762,75 @@ is first generated, and then a subset is selected to achieve roughly
 equal proportions of 0’s and 1’s. We fit the models using the standard
 GLM (via <code>glm.fit2</code>) and the shrinkage-based GLM (via
 <code>savvy_glm.fit2</code>in <code>savvyGLM</code> package).</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;glm2&#39;</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:MASS&#39;:</span></span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt;     crabs</span></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;CVXR&#39;</span></span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:MASS&#39;:</span></span>
-<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="co">#&gt;     huber</span></span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="co">#&gt;     power, sd, var</span></span>
-<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:base&#39;:</span></span>
-<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="co">#&gt;     diag, norm, outer</span></span>
-<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a></span>
-<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
-<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
-<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>target_proportion <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
-<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>)</span>
-<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a></span>
-<span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
-<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
-<span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a>}</span>
-<span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a></span>
-<span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
-<span id="cb1-38"><a href="#cb1-38" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
-<span id="cb1-39"><a href="#cb1-39" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb1-40"><a href="#cb1-40" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
-<span id="cb1-41"><a href="#cb1-41" tabindex="-1"></a>}</span>
-<span id="cb1-42"><a href="#cb1-42" tabindex="-1"></a></span>
-<span id="cb1-43"><a href="#cb1-43" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
-<span id="cb1-44"><a href="#cb1-44" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
-<span id="cb1-45"><a href="#cb1-45" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
-<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
-<span id="cb1-47"><a href="#cb1-47" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
-<span id="cb1-48"><a href="#cb1-48" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
-<span id="cb1-49"><a href="#cb1-49" tabindex="-1"></a>  n_val_large <span class="ot">&lt;-</span> n_val <span class="sc">*</span> <span class="dv">10</span></span>
-<span id="cb1-50"><a href="#cb1-50" tabindex="-1"></a>  </span>
-<span id="cb1-51"><a href="#cb1-51" tabindex="-1"></a>  X_large <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val_large, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
-<span id="cb1-52"><a href="#cb1-52" tabindex="-1"></a>  X_large_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_large)</span>
-<span id="cb1-53"><a href="#cb1-53" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb1-54"><a href="#cb1-54" tabindex="-1"></a>  mu_y_large <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>X_large_intercept <span class="sc">%*%</span> beta_true)))</span>
-<span id="cb1-55"><a href="#cb1-55" tabindex="-1"></a>  y_large <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="at">n =</span> n_val_large, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> mu_y_large)</span>
-<span id="cb1-56"><a href="#cb1-56" tabindex="-1"></a></span>
-<span id="cb1-57"><a href="#cb1-57" tabindex="-1"></a>  y_zero_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">0</span>)[<span class="dv">1</span><span class="sc">:</span><span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion)]</span>
-<span id="cb1-58"><a href="#cb1-58" tabindex="-1"></a>  y_one_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">1</span>)[<span class="dv">1</span><span class="sc">:</span>(n_val <span class="sc">-</span> <span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion))]</span>
-<span id="cb1-59"><a href="#cb1-59" tabindex="-1"></a>  final_indices <span class="ot">&lt;-</span> <span class="fu">c</span>(y_zero_indices, y_one_indices)</span>
-<span id="cb1-60"><a href="#cb1-60" tabindex="-1"></a>  X_final <span class="ot">&lt;-</span> X_large_intercept[final_indices, ]</span>
-<span id="cb1-61"><a href="#cb1-61" tabindex="-1"></a>  y_final <span class="ot">&lt;-</span> y_large[final_indices]</span>
-<span id="cb1-62"><a href="#cb1-62" tabindex="-1"></a>  </span>
-<span id="cb1-63"><a href="#cb1-63" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_final, y_final, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb1-64"><a href="#cb1-64" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb1-65"><a href="#cb1-65" tabindex="-1"></a></span>
-<span id="cb1-66"><a href="#cb1-66" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb1-67"><a href="#cb1-67" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_final, y_final, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb1-68"><a href="#cb1-68" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb1-69"><a href="#cb1-69" tabindex="-1"></a>  }</span>
-<span id="cb1-70"><a href="#cb1-70" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;glm2&#39;</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:MASS&#39;:</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt;     crabs</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;CVXR&#39;</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:MASS&#39;:</span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="co">#&gt;     huber</span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#&gt;     power, sd, var</span></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:base&#39;:</span></span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="co">#&gt;     diag, norm, outer</span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>target_proportion <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>)</span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a>}</span>
+<span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a></span>
+<span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb1-38"><a href="#cb1-38" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb1-39"><a href="#cb1-39" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb1-40"><a href="#cb1-40" tabindex="-1"></a>}</span>
+<span id="cb1-41"><a href="#cb1-41" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb1-43"><a href="#cb1-43" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb1-44"><a href="#cb1-44" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb1-45"><a href="#cb1-45" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb1-46"><a href="#cb1-46" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb1-47"><a href="#cb1-47" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb1-48"><a href="#cb1-48" tabindex="-1"></a>  n_val_large <span class="ot">&lt;-</span> n_val <span class="sc">*</span> <span class="dv">10</span></span>
+<span id="cb1-49"><a href="#cb1-49" tabindex="-1"></a>  </span>
+<span id="cb1-50"><a href="#cb1-50" tabindex="-1"></a>  X_large <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val_large, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb1-51"><a href="#cb1-51" tabindex="-1"></a>  X_large_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_large)</span>
+<span id="cb1-52"><a href="#cb1-52" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb1-53"><a href="#cb1-53" tabindex="-1"></a>  mu_y_large <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>X_large_intercept <span class="sc">%*%</span> beta_true)))</span>
+<span id="cb1-54"><a href="#cb1-54" tabindex="-1"></a>  y_large <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="at">n =</span> n_val_large, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> mu_y_large)</span>
+<span id="cb1-55"><a href="#cb1-55" tabindex="-1"></a></span>
+<span id="cb1-56"><a href="#cb1-56" tabindex="-1"></a>  y_zero_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">0</span>)[<span class="dv">1</span><span class="sc">:</span><span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion)]</span>
+<span id="cb1-57"><a href="#cb1-57" tabindex="-1"></a>  y_one_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">1</span>)[<span class="dv">1</span><span class="sc">:</span>(n_val <span class="sc">-</span> <span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion))]</span>
+<span id="cb1-58"><a href="#cb1-58" tabindex="-1"></a>  final_indices <span class="ot">&lt;-</span> <span class="fu">c</span>(y_zero_indices, y_one_indices)</span>
+<span id="cb1-59"><a href="#cb1-59" tabindex="-1"></a>  X_final <span class="ot">&lt;-</span> X_large_intercept[final_indices, ]</span>
+<span id="cb1-60"><a href="#cb1-60" tabindex="-1"></a>  y_final <span class="ot">&lt;-</span> y_large[final_indices]</span>
+<span id="cb1-61"><a href="#cb1-61" tabindex="-1"></a>  </span>
+<span id="cb1-62"><a href="#cb1-62" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_final, y_final, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb1-63"><a href="#cb1-63" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb1-64"><a href="#cb1-64" tabindex="-1"></a></span>
+<span id="cb1-65"><a href="#cb1-65" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb1-66"><a href="#cb1-66" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_final, y_final, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb1-67"><a href="#cb1-67" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb1-68"><a href="#cb1-68" tabindex="-1"></a>  }</span>
+<span id="cb1-69"><a href="#cb1-69" tabindex="-1"></a>}</span></code></pre></div>
 <p>A summary table here is produced to compare these distances across
 different <span class="math inline">\(\rho\)</span> values.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
@@ -923,60 +924,59 @@ only 5% of the responses are 0’s). This results in a skewed binary
 response, which allows us to evaluate the robustness of the shrinkage
 estimators under class imbalance. As before, models are fit using both
 the standard GLM and the various shrinkage-based GLM.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>target_proportion <span class="ot">&lt;-</span> <span class="fl">0.05</span></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>)</span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a></span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
-<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>}</span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
-<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
-<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>}</span>
-<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>  n_val_large <span class="ot">&lt;-</span> n_val <span class="sc">*</span> <span class="dv">10</span></span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>  </span>
-<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>  X_large <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val_large, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
-<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>  X_large_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_large)</span>
-<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>  mu_y_large <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>X_large_intercept <span class="sc">%*%</span> beta_true)))</span>
-<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>  y_large <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="at">n =</span> n_val_large, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> mu_y_large)</span>
-<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a></span>
-<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a>  y_zero_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">0</span>)[<span class="dv">1</span><span class="sc">:</span><span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion)]</span>
-<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a>  y_one_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">1</span>)[<span class="dv">1</span><span class="sc">:</span>(n_val <span class="sc">-</span> <span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion))]</span>
-<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>  final_indices <span class="ot">&lt;-</span> <span class="fu">c</span>(y_zero_indices, y_one_indices)</span>
-<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>  X_final <span class="ot">&lt;-</span> X_large_intercept[final_indices, ]</span>
-<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>  y_final <span class="ot">&lt;-</span> y_large[final_indices]</span>
-<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>  </span>
-<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_final, y_final, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a></span>
-<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_final, y_final, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a>  }</span>
-<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>target_proportion <span class="ot">&lt;-</span> <span class="fl">0.05</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">&quot;logit&quot;</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>}</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>}</span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>  n_val_large <span class="ot">&lt;-</span> n_val <span class="sc">*</span> <span class="dv">10</span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>  </span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>  X_large <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val_large, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>  X_large_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_large)</span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>  mu_y_large <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>X_large_intercept <span class="sc">%*%</span> beta_true)))</span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>  y_large <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="at">n =</span> n_val_large, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">prob =</span> mu_y_large)</span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a></span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a>  y_zero_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">0</span>)[<span class="dv">1</span><span class="sc">:</span><span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion)]</span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a>  y_one_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(y_large <span class="sc">==</span> <span class="dv">1</span>)[<span class="dv">1</span><span class="sc">:</span>(n_val <span class="sc">-</span> <span class="fu">round</span>(n_val <span class="sc">*</span> target_proportion))]</span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a>  final_indices <span class="ot">&lt;-</span> <span class="fu">c</span>(y_zero_indices, y_one_indices)</span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>  X_final <span class="ot">&lt;-</span> X_large_intercept[final_indices, ]</span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>  y_final <span class="ot">&lt;-</span> y_large[final_indices]</span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>  </span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_final, y_final, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a></span>
+<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_final, y_final, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a>  }</span>
+<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a>}</span></code></pre></div>
 <p>A summary table here is produced to compare these distances across
 different <span class="math inline">\(\rho\)</span> values.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
@@ -1076,56 +1076,55 @@ distribution with rate <span class="math inline">\(\mu =
 \exp(\eta)\)</span>. We fit the models using the standard GLM (via
 <code>glm.fit2</code>) and the shrinkage-based GLM (via
 <code>savvy_glm.fit2</code>in <code>savvyGLM</code> package).</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>}</span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a></span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
-<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>  base_increment <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
-<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>  growth_rate <span class="ot">&lt;-</span> <span class="fl">0.95</span> </span>
-<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> base_increment <span class="sc">*</span> (growth_rate <span class="sc">^</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">length.out =</span> <span class="fu">ceiling</span>(p_val <span class="sc">/</span> <span class="dv">2</span>)))</span>
-<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> <span class="fu">rep</span>(betas, <span class="at">each =</span> <span class="dv">2</span>)[<span class="dv">1</span><span class="sc">:</span>p_val]</span>
-<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>  signs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
-<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> betas <span class="sc">*</span> signs</span>
-<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>  <span class="fu">return</span>(betas)</span>
-<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>}</span>
-<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a></span>
-<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
-<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
-<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
-<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
-<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
-<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
-<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>  </span>
-<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
-<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
-<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">exp</span>(X_intercept <span class="sc">%*%</span> beta_true))</span>
-<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rpois</span>(n_val, <span class="at">lambda =</span> mu_y)</span>
-<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a>  </span>
-<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a></span>
-<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a>  }</span>
-<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>}</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>  base_increment <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>  growth_rate <span class="ot">&lt;-</span> <span class="fl">0.95</span> </span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> base_increment <span class="sc">*</span> (growth_rate <span class="sc">^</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">length.out =</span> <span class="fu">ceiling</span>(p_val <span class="sc">/</span> <span class="dv">2</span>)))</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> <span class="fu">rep</span>(betas, <span class="at">each =</span> <span class="dv">2</span>)[<span class="dv">1</span><span class="sc">:</span>p_val]</span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>  signs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> betas <span class="sc">*</span> signs</span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>  <span class="fu">return</span>(betas)</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>}</span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>  </span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">exp</span>(X_intercept <span class="sc">%*%</span> beta_true))</span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rpois</span>(n_val, <span class="at">lambda =</span> mu_y)</span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a>  </span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a>  }</span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a>}</span></code></pre></div>
 <p>A summary table here is produced to compare these distances across
 different <span class="math inline">\(\rho\)</span> values.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
@@ -1222,52 +1221,51 @@ numerical issues (such as non-positive responses). Models are then fit
 using both the standard GLM (via <code>glm.fit2</code>) and the
 shrinkage-based GLM (via <code>savvy_glm.fit2</code>in
 <code>savvyGLM</code> package).</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a></span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>}</span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a></span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
-<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
-<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
-<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>}</span>
-<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a></span>
-<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
-<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
-<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
-<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
-<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
-<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
-<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a>  </span>
-<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
-<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
-<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>((X_intercept <span class="sc">%*%</span> beta_true)<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rpois</span>(n_val, <span class="at">lambda =</span> mu_y)</span>
-<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a>  </span>
-<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a></span>
-<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a>  }</span>
-<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>}</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>}</span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a>  </span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>((X_intercept <span class="sc">%*%</span> beta_true)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rpois</span>(n_val, <span class="at">lambda =</span> mu_y)</span>
+<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a>  </span>
+<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a></span>
+<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a>  }</span>
+<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a>}</span></code></pre></div>
 <p>A summary table here is produced to compare these distances across
 different <span class="math inline">\(\rho\)</span> values.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
@@ -1365,62 +1363,56 @@ used to ensure that all simulated responses are positive, which is
 required by the Gamma model. Models are fit using both the standard GLM
 (via <code>glm.fit2</code>) and the shrinkage-based GLM (via
 <code>savvy_glm.fit2</code>in <code>savvyGLM</code> package).</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Load packages</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a></span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>}</span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a></span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>  base_increment <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
-<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>  growth_rate <span class="ot">&lt;-</span> <span class="fl">0.95</span> </span>
-<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> base_increment <span class="sc">*</span> (growth_rate <span class="sc">^</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">length.out =</span> <span class="fu">ceiling</span>(p_val <span class="sc">/</span> <span class="dv">2</span>)))</span>
-<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> <span class="fu">rep</span>(betas, <span class="at">each =</span> <span class="dv">2</span>)[<span class="dv">1</span><span class="sc">:</span>p_val]</span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>  signs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> betas <span class="sc">*</span> signs</span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>  <span class="fu">return</span>(betas)</span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>}</span>
-<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a></span>
-<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
-<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
-<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
-<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
-<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
-<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
-<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a>  </span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">exp</span>(X_intercept <span class="sc">%*%</span> beta_true))</span>
-<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a>  y <span class="ot">&lt;-</span>  <span class="fu">rgamma</span>(n_val, <span class="at">shape =</span> mu_y, <span class="at">scale =</span> <span class="dv">1</span>)</span>
-<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a>  retry_count <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>  <span class="cf">while</span>(<span class="fu">any</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>) <span class="sc">&amp;&amp;</span> retry_count <span class="sc">&lt;</span> <span class="dv">100</span>) {</span>
-<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a>    bad_idx <span class="ot">&lt;-</span> <span class="fu">which</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>)</span>
-<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a>    y[bad_idx] <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(<span class="fu">length</span>(bad_idx), <span class="at">shape =</span> mu_y[bad_idx], <span class="at">scale =</span> <span class="dv">1</span>)</span>
-<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a>    retry_count <span class="ot">&lt;-</span> retry_count <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a>  }</span>
-<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a>  </span>
-<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb9-51"><a href="#cb9-51" tabindex="-1"></a></span>
-<span id="cb9-52"><a href="#cb9-52" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb9-53"><a href="#cb9-53" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb9-54"><a href="#cb9-54" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb9-55"><a href="#cb9-55" tabindex="-1"></a>  }</span>
-<span id="cb9-56"><a href="#cb9-56" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>}</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>  base_increment <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>  growth_rate <span class="ot">&lt;-</span> <span class="fl">0.95</span> </span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> base_increment <span class="sc">*</span> (growth_rate <span class="sc">^</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">length.out =</span> <span class="fu">ceiling</span>(p_val <span class="sc">/</span> <span class="dv">2</span>)))</span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> <span class="fu">rep</span>(betas, <span class="at">each =</span> <span class="dv">2</span>)[<span class="dv">1</span><span class="sc">:</span>p_val]</span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>  signs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a>  betas <span class="ot">&lt;-</span> betas <span class="sc">*</span> signs</span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>  <span class="fu">return</span>(betas)</span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>}</span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a>  </span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">exp</span>(X_intercept <span class="sc">%*%</span> beta_true))</span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a>  y <span class="ot">&lt;-</span>  <span class="fu">rgamma</span>(n_val, <span class="at">shape =</span> mu_y, <span class="at">scale =</span> <span class="dv">1</span>)</span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">pmax</span>(y, <span class="fl">1e-4</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a>  </span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a></span>
+<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a>  }</span>
+<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a>}</span></code></pre></div>
 <p>A summary table here is produced to compare these distances across
 different <span class="math inline">\(\rho\)</span> values.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
@@ -1441,7 +1433,7 @@ for Gamma GLM)</caption>
 <tbody>
 <tr class="odd">
 <td align="left">OLS</td>
-<td align="right">0.4067</td>
+<td align="right">0.4068</td>
 <td align="right">0.3339</td>
 <td align="right">0.2600</td>
 <td align="right">0.2623</td>
@@ -1457,7 +1449,7 @@ for Gamma GLM)</caption>
 </tr>
 <tr class="odd">
 <td align="left">GSR</td>
-<td align="right">0.2540</td>
+<td align="right">0.2568</td>
 <td align="right">0.2633</td>
 <td align="right">0.2333</td>
 <td align="right">0.1989</td>
@@ -1465,7 +1457,7 @@ for Gamma GLM)</caption>
 </tr>
 <tr class="even">
 <td align="left">St</td>
-<td align="right">0.2406</td>
+<td align="right">0.2222</td>
 <td align="right">0.2534</td>
 <td align="right">0.2022</td>
 <td align="right">0.1861</td>
@@ -1473,7 +1465,7 @@ for Gamma GLM)</caption>
 </tr>
 <tr class="odd">
 <td align="left">DSh</td>
-<td align="right">0.2701</td>
+<td align="right">0.2592</td>
 <td align="right">0.2912</td>
 <td align="right">0.2399</td>
 <td align="right">0.2381</td>
@@ -1481,17 +1473,17 @@ for Gamma GLM)</caption>
 </tr>
 <tr class="even">
 <td align="left">LW</td>
-<td align="right">0.3683</td>
-<td align="right">0.2895</td>
+<td align="right">0.3664</td>
+<td align="right">0.2905</td>
 <td align="right">0.3023</td>
 <td align="right">0.2252</td>
 <td align="right">0.2911</td>
 </tr>
 <tr class="odd">
 <td align="left">QIS</td>
-<td align="right">0.3691</td>
-<td align="right">0.2860</td>
-<td align="right">0.3001</td>
+<td align="right">0.3671</td>
+<td align="right">0.2871</td>
+<td align="right">0.2999</td>
 <td align="right">0.2409</td>
 <td align="right">0.2990</td>
 </tr>
@@ -1520,71 +1512,64 @@ shrinkage-based GLM (via <code>savvy_glm.fit2</code>in
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
 <span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a></span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>}</span>
-<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a></span>
-<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
-<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
-<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
-<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>}</span>
-<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a></span>
-<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>findStartingValues <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, <span class="at">epsilon =</span> <span class="fl">1e-6</span>) {</span>
-<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> <span class="fu">Variable</span>(<span class="fu">ncol</span>(x))</span>
-<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>  eta <span class="ot">&lt;-</span> x <span class="sc">%*%</span> beta</span>
-<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a>  objective <span class="ot">&lt;-</span> <span class="fu">Minimize</span>(<span class="fu">sum_squares</span>(<span class="fu">sqrt</span>(y <span class="sc">+</span> <span class="fl">0.1</span>) <span class="sc">-</span> eta))</span>
-<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a>  constraints <span class="ot">&lt;-</span> <span class="fu">list</span>(eta <span class="sc">&gt;=</span> epsilon)</span>
-<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a>  problem <span class="ot">&lt;-</span> <span class="fu">Problem</span>(objective, constraints)</span>
-<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a>  <span class="fu">psolve</span>(problem, <span class="at">silent =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a>  starting_values <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">value</span>(beta))</span>
-<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a>  <span class="fu">return</span>(starting_values)</span>
-<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a>}</span>
-<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a></span>
-<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
-<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
-<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
-<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a></span>
-<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
-<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
-<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
-<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a>  </span>
-<span id="cb11-43"><a href="#cb11-43" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
-<span id="cb11-44"><a href="#cb11-44" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
-<span id="cb11-45"><a href="#cb11-45" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb11-46"><a href="#cb11-46" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>((X_intercept <span class="sc">%*%</span> beta_true)<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb11-47"><a href="#cb11-47" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(n_val, <span class="at">shape =</span> mu_y, <span class="at">scale =</span> <span class="dv">1</span>)</span>
-<span id="cb11-48"><a href="#cb11-48" tabindex="-1"></a>  </span>
-<span id="cb11-49"><a href="#cb11-49" tabindex="-1"></a>  retry_count <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb11-50"><a href="#cb11-50" tabindex="-1"></a>  <span class="cf">while</span>(<span class="fu">any</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>) <span class="sc">&amp;&amp;</span> retry_count <span class="sc">&lt;</span> <span class="dv">100</span>) {</span>
-<span id="cb11-51"><a href="#cb11-51" tabindex="-1"></a>    bad_idx <span class="ot">&lt;-</span> <span class="fu">which</span>(y <span class="sc">&lt;=</span> <span class="dv">0</span>)</span>
-<span id="cb11-52"><a href="#cb11-52" tabindex="-1"></a>    y[bad_idx] <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(<span class="fu">length</span>(bad_idx), <span class="at">shape =</span> mu_y[bad_idx], <span class="at">scale =</span> <span class="dv">1</span>)</span>
-<span id="cb11-53"><a href="#cb11-53" tabindex="-1"></a>    retry_count <span class="ot">&lt;-</span> retry_count <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb11-54"><a href="#cb11-54" tabindex="-1"></a>  }</span>
-<span id="cb11-55"><a href="#cb11-55" tabindex="-1"></a>  </span>
-<span id="cb11-56"><a href="#cb11-56" tabindex="-1"></a>  starting_values <span class="ot">&lt;-</span> <span class="fu">findStartingValues</span>(X_intercept, y)</span>
-<span id="cb11-57"><a href="#cb11-57" tabindex="-1"></a>  </span>
-<span id="cb11-58"><a href="#cb11-58" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">start =</span> starting_values,</span>
-<span id="cb11-59"><a href="#cb11-59" tabindex="-1"></a>                      <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb11-60"><a href="#cb11-60" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb11-61"><a href="#cb11-61" tabindex="-1"></a></span>
-<span id="cb11-62"><a href="#cb11-62" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb11-63"><a href="#cb11-63" tabindex="-1"></a>    <span class="co"># Added use_parallel = FALSE to dramatically speed up vignette building</span></span>
-<span id="cb11-64"><a href="#cb11-64" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, </span>
-<span id="cb11-65"><a href="#cb11-65" tabindex="-1"></a>                          <span class="at">family =</span> family_type, <span class="at">use_robust_start =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb11-66"><a href="#cb11-66" tabindex="-1"></a>                          <span class="at">use_parallel =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-67"><a href="#cb11-67" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
-<span id="cb11-68"><a href="#cb11-68" tabindex="-1"></a>  }</span>
-<span id="cb11-69"><a href="#cb11-69" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>n_val <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>p_val <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>rho_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.75</span>, <span class="sc">-</span><span class="fl">0.5</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>mu_val <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>sigma.rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, p_val) {</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>  rho_val <span class="sc">^</span> <span class="fu">abs</span>(<span class="fu">outer</span>(<span class="dv">1</span><span class="sc">:</span>p_val, <span class="dv">1</span><span class="sc">:</span>p_val, <span class="st">&quot;-&quot;</span>))</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>}</span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a></span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>theta_func <span class="ot">&lt;-</span> <span class="cf">function</span>(p_val) {</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>  sgn <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">length.out =</span> p_val)</span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>  mag <span class="ot">&lt;-</span> <span class="fu">ceiling</span>(<span class="fu">seq_len</span>(p_val) <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>  sgn <span class="sc">*</span> mag</span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a>}</span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a></span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>findStartingValues <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, <span class="at">epsilon =</span> <span class="fl">1e-6</span>) {</span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> <span class="fu">Variable</span>(<span class="fu">ncol</span>(x))</span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a>  eta <span class="ot">&lt;-</span> x <span class="sc">%*%</span> beta</span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a>  objective <span class="ot">&lt;-</span> <span class="fu">Minimize</span>(<span class="fu">sum_squares</span>(<span class="fu">sqrt</span>(y <span class="sc">+</span> <span class="fl">0.1</span>) <span class="sc">-</span> eta))</span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a>  constraints <span class="ot">&lt;-</span> <span class="fu">list</span>(eta <span class="sc">&gt;=</span> epsilon)</span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a>  problem <span class="ot">&lt;-</span> <span class="fu">Problem</span>(objective, constraints)</span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a>  <span class="fu">psolve</span>(problem, <span class="at">silent =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a>  starting_values <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">value</span>(beta))</span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a>  <span class="fu">return</span>(starting_values)</span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a>}</span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a></span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>, <span class="st">&quot;Sh&quot;</span>)</span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a>l2_matrix <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(rho_vals),</span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, <span class="fu">paste0</span>(<span class="st">&quot;rho=&quot;</span>, rho_vals)))</span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a></span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a><span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_along</span>(rho_vals)) {</span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a>  rho_val <span class="ot">&lt;-</span> rho_vals[j]</span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a>  Sigma <span class="ot">&lt;-</span> <span class="fu">sigma.rho</span>(rho_val, p_val)</span>
+<span id="cb11-43"><a href="#cb11-43" tabindex="-1"></a>  </span>
+<span id="cb11-44"><a href="#cb11-44" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n_val, <span class="at">mu =</span> <span class="fu">rep</span>(mu_val, p_val), <span class="at">Sigma =</span> Sigma)</span>
+<span id="cb11-45"><a href="#cb11-45" tabindex="-1"></a>  X_intercept <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X)</span>
+<span id="cb11-46"><a href="#cb11-46" tabindex="-1"></a>  beta_true <span class="ot">&lt;-</span> <span class="fu">theta_func</span>(p_val <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb11-47"><a href="#cb11-47" tabindex="-1"></a>  mu_y <span class="ot">&lt;-</span> <span class="fu">as.vector</span>((X_intercept <span class="sc">%*%</span> beta_true)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb11-48"><a href="#cb11-48" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(n_val, <span class="at">shape =</span> mu_y, <span class="at">scale =</span> <span class="dv">1</span>)</span>
+<span id="cb11-49"><a href="#cb11-49" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">pmax</span>(y, <span class="fl">1e-4</span>)</span>
+<span id="cb11-50"><a href="#cb11-50" tabindex="-1"></a>  </span>
+<span id="cb11-51"><a href="#cb11-51" tabindex="-1"></a>  starting_values <span class="ot">&lt;-</span> <span class="fu">findStartingValues</span>(X_intercept, y)</span>
+<span id="cb11-52"><a href="#cb11-52" tabindex="-1"></a></span>
+<span id="cb11-53"><a href="#cb11-53" tabindex="-1"></a>  fit_ols <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_intercept, y, <span class="at">start =</span> starting_values,</span>
+<span id="cb11-54"><a href="#cb11-54" tabindex="-1"></a>                      <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb11-55"><a href="#cb11-55" tabindex="-1"></a>  l2_matrix[<span class="st">&quot;OLS&quot;</span>, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit_ols<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb11-56"><a href="#cb11-56" tabindex="-1"></a></span>
+<span id="cb11-57"><a href="#cb11-57" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb11-58"><a href="#cb11-58" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_intercept, y, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, </span>
+<span id="cb11-59"><a href="#cb11-59" tabindex="-1"></a>                          <span class="at">family =</span> family_type, <span class="at">use_robust_start =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-60"><a href="#cb11-60" tabindex="-1"></a>    l2_matrix[m, j] <span class="ot">&lt;-</span> <span class="fu">norm</span>(fit<span class="sc">$</span>coefficients <span class="sc">-</span> beta_true, <span class="at">type =</span> <span class="st">&quot;2&quot;</span>)</span>
+<span id="cb11-61"><a href="#cb11-61" tabindex="-1"></a>  }</span>
+<span id="cb11-62"><a href="#cb11-62" tabindex="-1"></a>}</span></code></pre></div>
 <p>A summary table here is produced to compare these distances across
 different <span class="math inline">\(\rho\)</span> values.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>l2_table <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(l2_matrix)</span>
@@ -1607,33 +1592,33 @@ for Gamma GLM)</caption>
 <td align="left">OLS</td>
 <td align="right">108.1097</td>
 <td align="right">78.2093</td>
-<td align="right">56.4163</td>
-<td align="right">46.8951</td>
-<td align="right">41.9629</td>
+<td align="right">56.4152</td>
+<td align="right">46.8995</td>
+<td align="right">42.0866</td>
 </tr>
 <tr class="even">
 <td align="left">SR</td>
 <td align="right">108.1052</td>
 <td align="right">78.2082</td>
 <td align="right">56.3660</td>
-<td align="right">46.8295</td>
-<td align="right">41.9684</td>
+<td align="right">46.8440</td>
+<td align="right">42.0451</td>
 </tr>
 <tr class="odd">
 <td align="left">GSR</td>
 <td align="right">104.5311</td>
 <td align="right">77.1232</td>
-<td align="right">55.9971</td>
+<td align="right">55.9970</td>
 <td align="right">46.7169</td>
-<td align="right">42.1281</td>
+<td align="right">42.3391</td>
 </tr>
 <tr class="even">
 <td align="left">St</td>
 <td align="right">102.2954</td>
-<td align="right">76.2955</td>
-<td align="right">55.7526</td>
-<td align="right">46.3217</td>
-<td align="right">41.5515</td>
+<td align="right">76.2913</td>
+<td align="right">55.7534</td>
+<td align="right">46.3595</td>
+<td align="right">41.7950</td>
 </tr>
 <tr class="odd">
 <td align="left">DSh</td>
@@ -1641,15 +1626,15 @@ for Gamma GLM)</caption>
 <td align="right">77.2780</td>
 <td align="right">56.6020</td>
 <td align="right">46.8909</td>
-<td align="right">42.1011</td>
+<td align="right">42.4146</td>
 </tr>
 <tr class="even">
 <td align="left">LW</td>
 <td align="right">105.0065</td>
 <td align="right">76.7574</td>
-<td align="right">56.2635</td>
-<td align="right">46.6498</td>
-<td align="right">41.9816</td>
+<td align="right">56.2725</td>
+<td align="right">46.6663</td>
+<td align="right">42.0670</td>
 </tr>
 <tr class="odd">
 <td align="left">QIS</td>
@@ -1657,15 +1642,15 @@ for Gamma GLM)</caption>
 <td align="right">77.2196</td>
 <td align="right">55.2965</td>
 <td align="right">47.2840</td>
-<td align="right">42.0942</td>
+<td align="right">42.1305</td>
 </tr>
 <tr class="even">
 <td align="left">Sh</td>
 <td align="right">107.9788</td>
 <td align="right">78.1691</td>
-<td align="right">56.4011</td>
-<td align="right">46.8882</td>
-<td align="right">41.9786</td>
+<td align="right">56.4000</td>
+<td align="right">46.8926</td>
+<td align="right">42.0904</td>
 </tr>
 </tbody>
 </table>
@@ -1711,63 +1696,61 @@ paper: GLM Solutions via Shrinkage.</p>
 <hr />
 <div id="fl-dataset-with-log-link-function" class="section level2">
 <h2>FL dataset with <em>log</em> Link Function</h2>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Load required packages</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="fu">library</span>(caret)</span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="dv">2014</span><span class="sc">:</span><span class="dv">2015</span></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>)</span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">10</span></span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
-<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a></span>
-<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a>Evaluation_results <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(years),</span>
-<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>                             <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, years))</span>
-<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a></span>
-<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>calculate_mse <span class="ot">&lt;-</span> <span class="cf">function</span>(true_values, predicted_values) {</span>
-<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>  <span class="fu">mean</span>((true_values <span class="sc">-</span> predicted_values)<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a>}</span>
-<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a></span>
-<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a><span class="cf">for</span> (yr <span class="cf">in</span> years) {</span>
-<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;Processing year:&quot;</span>, yr, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a>  filename <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">&quot;FL_data_%d.csv&quot;</span>, yr)</span>
-<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a>  data_year <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(filename, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a>  </span>
-<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a>  ratio_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> N, <span class="at">ncol =</span> <span class="fu">length</span>(model_names)<span class="sc">-</span><span class="dv">1</span>)</span>
-<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>  <span class="fu">colnames</span>(ratio_mat) <span class="ot">&lt;-</span> model_names[<span class="sc">-</span><span class="dv">1</span>]</span>
-<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a>    <span class="fu">set.seed</span>(yr <span class="sc">*</span> <span class="dv">1000</span> <span class="sc">+</span> i)</span>
-<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a>    train_index <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(data_year[, <span class="dv">1</span>], <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a>    train_data <span class="ot">&lt;-</span> data_year[train_index, ]</span>
-<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a>    test_data <span class="ot">&lt;-</span> data_year[<span class="sc">-</span>train_index, ]</span>
-<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a>    </span>
-<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a>    X_train <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(train_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
-<span id="cb13-37"><a href="#cb13-37" tabindex="-1"></a>    y_train <span class="ot">&lt;-</span> train_data[, <span class="dv">1</span>]</span>
-<span id="cb13-38"><a href="#cb13-38" tabindex="-1"></a>    X_test <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(test_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
-<span id="cb13-39"><a href="#cb13-39" tabindex="-1"></a>    y_test <span class="ot">&lt;-</span> test_data[, <span class="dv">1</span>]</span>
-<span id="cb13-40"><a href="#cb13-40" tabindex="-1"></a>    X_train_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_train)</span>
-<span id="cb13-41"><a href="#cb13-41" tabindex="-1"></a>    X_test_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_test)</span>
-<span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a>  </span>
-<span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a>    model_glm2 <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_train_int, y_train, <span class="at">start =</span> starting_values,</span>
-<span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a>                           <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
-<span id="cb13-45"><a href="#cb13-45" tabindex="-1"></a>    y_pred_glm2 <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_glm2<span class="sc">$</span>coefficients)</span>
-<span id="cb13-46"><a href="#cb13-46" tabindex="-1"></a>    mse_ols <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred_glm2)</span>
-<span id="cb13-47"><a href="#cb13-47" tabindex="-1"></a>    <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb13-48"><a href="#cb13-48" tabindex="-1"></a>      model_savvy <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_train_int, y_train, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list,</span>
-<span id="cb13-49"><a href="#cb13-49" tabindex="-1"></a>                                    <span class="at">family =</span> family_type, <span class="at">use_robust_start =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb13-50"><a href="#cb13-50" tabindex="-1"></a>      y_pred <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_savvy<span class="sc">$</span>coefficients)</span>
-<span id="cb13-51"><a href="#cb13-51" tabindex="-1"></a>      mse_savvy <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred)</span>
-<span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a>      ratio_mat[i, m] <span class="ot">&lt;-</span> mse_ols <span class="sc">/</span> mse_savvy</span>
-<span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a>    }</span>
-<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a>  }</span>
-<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a>  avg_ratios <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">colMeans</span>(ratio_mat, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb13-56"><a href="#cb13-56" tabindex="-1"></a>  Evaluation_results[, <span class="fu">as.character</span>(yr)] <span class="ot">&lt;-</span> avg_ratios</span>
-<span id="cb13-57"><a href="#cb13-57" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">library</span>(savvyGLM)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">library</span>(glm2)</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="fu">library</span>(CVXR)</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">library</span>(caret)</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="dv">2014</span><span class="sc">:</span><span class="dv">2015</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;log&quot;</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>Evaluation_results <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> <span class="fu">length</span>(model_names), <span class="at">ncol =</span> <span class="fu">length</span>(years),</span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a>                             <span class="at">dimnames =</span> <span class="fu">list</span>(model_names, years))</span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a>calculate_mse <span class="ot">&lt;-</span> <span class="cf">function</span>(true_values, predicted_values) {</span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>  <span class="fu">mean</span>((true_values <span class="sc">-</span> predicted_values)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>}</span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a></span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a><span class="cf">for</span> (yr <span class="cf">in</span> years) {</span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;Processing year:&quot;</span>, yr, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>  filename <span class="ot">&lt;-</span> <span class="fu">sprintf</span>(<span class="st">&quot;FL_data_%d.csv&quot;</span>, yr)</span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a>  data_year <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(filename, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a>  </span>
+<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a>  ratio_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> N, <span class="at">ncol =</span> <span class="fu">length</span>(model_names)<span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a>  <span class="fu">colnames</span>(ratio_mat) <span class="ot">&lt;-</span> model_names[<span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>    <span class="fu">set.seed</span>(yr <span class="sc">*</span> <span class="dv">1000</span> <span class="sc">+</span> i)</span>
+<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a>    train_index <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(data_year[, <span class="dv">1</span>], <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a>    train_data <span class="ot">&lt;-</span> data_year[train_index, ]</span>
+<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a>    test_data <span class="ot">&lt;-</span> data_year[<span class="sc">-</span>train_index, ]</span>
+<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a>    </span>
+<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a>    X_train <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(train_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
+<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a>    y_train <span class="ot">&lt;-</span> train_data[, <span class="dv">1</span>]</span>
+<span id="cb13-37"><a href="#cb13-37" tabindex="-1"></a>    X_test <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(test_data[, <span class="sc">-</span><span class="dv">1</span>])</span>
+<span id="cb13-38"><a href="#cb13-38" tabindex="-1"></a>    y_test <span class="ot">&lt;-</span> test_data[, <span class="dv">1</span>]</span>
+<span id="cb13-39"><a href="#cb13-39" tabindex="-1"></a>    X_train_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_train)</span>
+<span id="cb13-40"><a href="#cb13-40" tabindex="-1"></a>    X_test_int <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, X_test)</span>
+<span id="cb13-41"><a href="#cb13-41" tabindex="-1"></a>  </span>
+<span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a>    model_glm2 <span class="ot">&lt;-</span> <span class="fu">glm.fit2</span>(X_train_int, y_train, <span class="at">start =</span> starting_values,</span>
+<span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a>                           <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a>    y_pred_glm2 <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_glm2<span class="sc">$</span>coefficients)</span>
+<span id="cb13-45"><a href="#cb13-45" tabindex="-1"></a>    mse_ols <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred_glm2)</span>
+<span id="cb13-46"><a href="#cb13-46" tabindex="-1"></a>    <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
+<span id="cb13-47"><a href="#cb13-47" tabindex="-1"></a>      model_savvy <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_train_int, y_train, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb13-48"><a href="#cb13-48" tabindex="-1"></a>      y_pred <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_savvy<span class="sc">$</span>coefficients)</span>
+<span id="cb13-49"><a href="#cb13-49" tabindex="-1"></a>      mse_savvy <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred)</span>
+<span id="cb13-50"><a href="#cb13-50" tabindex="-1"></a>      ratio_mat[i, m] <span class="ot">&lt;-</span> mse_ols <span class="sc">/</span> mse_savvy</span>
+<span id="cb13-51"><a href="#cb13-51" tabindex="-1"></a>    }</span>
+<span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a>  }</span>
+<span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a>  avg_ratios <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">colMeans</span>(ratio_mat, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a>  Evaluation_results[, <span class="fu">as.character</span>(yr)] <span class="ot">&lt;-</span> avg_ratios</span>
+<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a>}</span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>Evaluation_results_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(Evaluation_results)</span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">kable</span>(Evaluation_results_df, <span class="at">digits =</span> <span class="dv">4</span>,</span>
 <span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Average MSE Ratio (OLS / Shrinkage) for Each Year (Gamma GLM with Log Link)&quot;</span>)</span></code></pre></div>
@@ -1784,7 +1767,7 @@ paper: GLM Solutions via Shrinkage.</p>
 <span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a></span>
 <span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
 <span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="dv">2014</span><span class="sc">:</span><span class="dv">2023</span></span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>)</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>model_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;OLS&quot;</span>, <span class="st">&quot;SR&quot;</span>, <span class="st">&quot;GSR&quot;</span>, <span class="st">&quot;St&quot;</span>, <span class="st">&quot;DSh&quot;</span>, <span class="st">&quot;LW&quot;</span>, <span class="st">&quot;QIS&quot;</span>)</span>
 <span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">100</span></span>
 <span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>control_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">maxit =</span> <span class="dv">250</span>, <span class="at">epsilon =</span> <span class="fl">1e-6</span>, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>family_type <span class="ot">&lt;-</span> <span class="fu">Gamma</span>(<span class="at">link =</span> <span class="st">&quot;sqrt&quot;</span>)</span>
@@ -1821,16 +1804,15 @@ paper: GLM Solutions via Shrinkage.</p>
 <span id="cb15-45"><a href="#cb15-45" tabindex="-1"></a>    y_pred_glm2 <span class="ot">&lt;-</span> (X_test_int <span class="sc">%*%</span> model_glm2<span class="sc">$</span>coefficients)<span class="sc">^</span><span class="dv">2</span></span>
 <span id="cb15-46"><a href="#cb15-46" tabindex="-1"></a>    mse_ols <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred_glm2)</span>
 <span id="cb15-47"><a href="#cb15-47" tabindex="-1"></a>    <span class="cf">for</span> (m <span class="cf">in</span> model_names[<span class="sc">-</span><span class="dv">1</span>]) {</span>
-<span id="cb15-48"><a href="#cb15-48" tabindex="-1"></a>      model_savvy <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_train_int, y_train, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list,</span>
-<span id="cb15-49"><a href="#cb15-49" tabindex="-1"></a>                                    <span class="at">family =</span> family_type, <span class="at">use_robust_start =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb15-50"><a href="#cb15-50" tabindex="-1"></a>      y_pred <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_savvy<span class="sc">$</span>coefficients)</span>
-<span id="cb15-51"><a href="#cb15-51" tabindex="-1"></a>      mse_savvy <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred)</span>
-<span id="cb15-52"><a href="#cb15-52" tabindex="-1"></a>      ratio_mat[i, m] <span class="ot">&lt;-</span> mse_ols <span class="sc">/</span> mse_savvy</span>
-<span id="cb15-53"><a href="#cb15-53" tabindex="-1"></a>    }</span>
-<span id="cb15-54"><a href="#cb15-54" tabindex="-1"></a>  }</span>
-<span id="cb15-55"><a href="#cb15-55" tabindex="-1"></a>  avg_ratios <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">colMeans</span>(ratio_mat, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb15-56"><a href="#cb15-56" tabindex="-1"></a>  Evaluation_results[, <span class="fu">as.character</span>(yr)] <span class="ot">&lt;-</span> avg_ratios</span>
-<span id="cb15-57"><a href="#cb15-57" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb15-48"><a href="#cb15-48" tabindex="-1"></a>      model_savvy <span class="ot">&lt;-</span> <span class="fu">savvy_glm.fit2</span>(X_train_int, y_train, <span class="at">model_class =</span> m, <span class="at">control =</span> control_list, <span class="at">family =</span> family_type)</span>
+<span id="cb15-49"><a href="#cb15-49" tabindex="-1"></a>      y_pred <span class="ot">&lt;-</span> <span class="fu">exp</span>(X_test_int <span class="sc">%*%</span> model_savvy<span class="sc">$</span>coefficients)</span>
+<span id="cb15-50"><a href="#cb15-50" tabindex="-1"></a>      mse_savvy <span class="ot">&lt;-</span> <span class="fu">calculate_mse</span>(y_test, y_pred)</span>
+<span id="cb15-51"><a href="#cb15-51" tabindex="-1"></a>      ratio_mat[i, m] <span class="ot">&lt;-</span> mse_ols <span class="sc">/</span> mse_savvy</span>
+<span id="cb15-52"><a href="#cb15-52" tabindex="-1"></a>    }</span>
+<span id="cb15-53"><a href="#cb15-53" tabindex="-1"></a>  }</span>
+<span id="cb15-54"><a href="#cb15-54" tabindex="-1"></a>  avg_ratios <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">colMeans</span>(ratio_mat, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb15-55"><a href="#cb15-55" tabindex="-1"></a>  Evaluation_results[, <span class="fu">as.character</span>(yr)] <span class="ot">&lt;-</span> avg_ratios</span>
+<span id="cb15-56"><a href="#cb15-56" tabindex="-1"></a>}</span></code></pre></div>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>Evaluation_results_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(Evaluation_results)</span>
 <span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">kable</span>(Evaluation_results_df, <span class="at">digits =</span> <span class="dv">4</span>,</span>
 <span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Average MSE Ratio (OLS / Shrinkage) for Each Year (Gamma GLM with Log Link)&quot;</span>)</span></code></pre></div>
